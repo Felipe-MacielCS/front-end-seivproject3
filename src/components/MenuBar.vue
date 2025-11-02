@@ -1,5 +1,5 @@
 <script setup>
-import ocLogo from "/oc-logo-white.png";
+import avocadoLogo from "../Assets/avocado.png";
 import { ref, onMounted } from "vue";
 import Utils from "../config/utils";
 import AuthServices from "../services/authServices";
@@ -7,7 +7,7 @@ import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
 const user = ref(null);
-const title = ref("Tutorials");
+const title = ref("Exercise");
 const initials = ref("");
 const name = ref("");
 const logoURL = ref("");
@@ -34,7 +34,7 @@ const logout = () => {
 };
 
 onMounted(() => {
-  logoURL.value = ocLogo;
+  logoURL.value = avocadoLogo;
   resetMenu();
 });
 </script>
