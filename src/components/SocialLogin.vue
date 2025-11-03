@@ -5,20 +5,22 @@ import Utils from "../config/utils.js";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-const fName = ref("");
-const lName = ref("");
 const user = ref({});
 
+// Initialize Google Login button
 const loginWithGoogle = () => {
   window.handleCredentialResponse = handleCredentialResponse;
   const client = import.meta.env.VITE_APP_CLIENT_ID;
-  console.log(client);
+  console.log("Google Client ID:", client);
+
   window.google.accounts.id.initialize({
     client_id: client,
     cancel_on_tap_outside: false,
     auto_select: true,
     callback: window.handleCredentialResponse,
   });
+
+  // Render Google Sign-In button
   window.google.accounts.id.renderButton(document.getElementById("parent_id"), {
     type: "standard",
     theme: "outline",
@@ -28,20 +30,30 @@ const loginWithGoogle = () => {
   });
 };
 
+// Handle the Google Credential after login
 const handleCredentialResponse = async (response) => {
-  let token = {
-    credential: response.credential,
-  };
+  const token = { credential: response.credential };
+
   await AuthServices.loginUser(token)
-    .then((response) => {
-      user.value = response.data;
+    .then((res) => {
+      user.value = res.data;
+      console.log("✅ Logged in user:", user.value);
+
+      // Save user to localStorage/session
       Utils.setStore("user", user.value);
-      fName.value = user.value.fName;
-      lName.value = user.value.lName;
-      router.push({ name: "tutorials" });
+
+      // Optionally store JWT for API requests
+      Utils.setToken(user.value.token);
+
+      // Redirect based on role
+      if (user.value.isAdmin) {
+        router.push({ name: "adminDashboard" });
+      } else {
+        router.push({ name: "athlete" }); // or "athleteHome"
+      }
     })
     .catch((error) => {
-      console.log("error", error);
+      console.error("❌ Login error:", error);
     });
 };
 
@@ -53,7 +65,7 @@ onMounted(() => {
 <template>
   <div class="signup-buttons">
     <v-row justify="center">
-      <div display="flex" id="parent_id"></div>
+      <div id="parent_id"></div>
     </v-row>
   </div>
 </template>
