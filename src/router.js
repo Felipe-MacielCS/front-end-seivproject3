@@ -5,9 +5,9 @@ import Login from "./views/Login.vue";
 import Signup from "./views/Signup.vue";
 
 // Dashboards
-import AthleteDashboard from "./views/AthleteDashboard.vue";
-import CoachDashboard from "./views/CoachDashboard.vue";
-import AdminDashboard from "./views/AdminDashboard.vue";
+import AthleteDashboard from "./views/AthleteDashBoard.vue";
+import CoachDashboard from "./views/CoachDashBoard.vue";
+import AdminDashboard from "./views/AdminDashBoard.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
