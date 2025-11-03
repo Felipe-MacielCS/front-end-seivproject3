@@ -1,13 +1,19 @@
 import apiClient from "./services.js";
 
 export default {
-  loginUser(user) {
-    return apiClient.post("login", user);
+  // Google login
+  loginUser(credential) {
+    // Send the Google credential object { credential: <token> }
+    return apiClient.post("login", credential);
   },
-  authorizeUser(code) {
-    return apiClient.post("authorize", code);
+
+  // Placeholder authorize (if needed later)
+  authorizeUser(id) {
+    return apiClient.post(`authorize/${id}`);
   },
-  logoutUser(token) {
-    return apiClient.post("logout", token);
+
+  // Logout user
+  logoutUser() {
+    return apiClient.post("logout");
   },
 };
