@@ -1,17 +1,18 @@
 import { createRouter, createWebHistory } from "vue-router";
 
+// Auth
 import Login from "./views/Login.vue";
+import Signup from "./views/Signup.vue";
 
-import TutorialsList from "./views/TutorialsList.vue";
-import EditTutorial from "./views/EditTutorial.vue";
-import AddTutorial from "./views/AddTutorial.vue";
-import ViewTutorial from "./views/ViewTutorial.vue";
-import AddLesson from "./views/AddLesson.vue";
-import EditLesson from "./views/EditLesson.vue";
+// Dashboards
+import AthleteDashboard from "./views/AthleteDashboard.vue";
+import CoachDashboard from "./views/CoachDashboard.vue";
+import AdminDashboard from "./views/AdminDashboard.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // --- Authentication ---
     {
       path: "/",
       alias: "/login",
@@ -19,38 +20,35 @@ const router = createRouter({
       component: Login,
     },
     {
-      path: "/tutorials",
-      name: "tutorials",
-      component: TutorialsList,
+      path: "/signup",
+      name: "signup",
+      component: Signup,
+    },
+
+    // --- Role-Based Dashboards ---
+    {
+      path: "/athlete",
+      name: "athlete",
+      component: AthleteDashboard,
+      meta: { role: "athlete" },
     },
     {
-      path: "/edit/:id",
-      name: "edit",
-      component: EditTutorial,
-      props: true,
+      path: "/coach",
+      name: "coach",
+      component: CoachDashboard,
+      meta: { role: "coach" },
     },
     {
-      path: "/add",
-      name: "add",
-      component: AddTutorial,
+      path: "/admin",
+      name: "admin",
+      component: AdminDashboard,
+      meta: { role: "admin" },
     },
+
+    // --- Catch-all 404 redirect ---
     {
-      path: "/view/:id",
-      name: "view",
-      component: ViewTutorial,
-      props: true,
-    },
-    {
-      path: "/addLesson/:tutorialId",
-      name: "addLesson",
-      component: AddLesson,
-      props: true,
-    },
-    {
-      path: "/editLesson/:tutorialId/:lessonId",
-      name: "editLesson",
-      component: EditLesson,
-      props: true,
+      path: "/:pathMatch(.*)*",
+      redirect: "/login",
     },
   ],
 });
