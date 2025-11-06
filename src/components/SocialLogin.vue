@@ -6,9 +6,10 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 const user = ref({});
+const loading = ref(false);
 
-// Initialize Google Login button
-const loginWithGoogle = () => {
+// Initialize Google Sign-Up button
+const initGoogleSignUp = () => {
   window.handleCredentialResponse = handleCredentialResponse;
   const client = import.meta.env.VITE_APP_CLIENT_ID;
   console.log("Google Client ID:", client);
@@ -16,11 +17,11 @@ const loginWithGoogle = () => {
   window.google.accounts.id.initialize({
     client_id: client,
     cancel_on_tap_outside: false,
-    auto_select: true,
+    auto_select: false,
     callback: window.handleCredentialResponse,
   });
 
-  // Render Google Sign-In button
+  // Render the button inside the div
   window.google.accounts.id.renderButton(document.getElementById("parent_id"), {
     type: "standard",
     theme: "outline",
@@ -30,35 +31,48 @@ const loginWithGoogle = () => {
   });
 };
 
-// Handle the Google Credential after login
+// Handle the Google Credential after signup
 const handleCredentialResponse = async (response) => {
-  const token = { credential: response.credential };
+  loading.value = true;
 
-  await AuthServices.loginUser(token)
-    .then((res) => {
-      user.value = res.data;
-      console.log("✅ Logged in user:", user.value);
+  // Get chosen role from sessionStorage (set in SignUp.vue)
+  const role = sessionStorage.getItem("signupRole") || "athlete";
 
-      // Save user to localStorage/session
-      Utils.setStore("user", user.value);
+  // Build payload for backend
+  const token = {
+    credential: response.credential,
+    isAthlete: role === "athlete",
+    isCoach: role === "coach",
+  };
 
-      // Optionally store JWT for API requests
-      Utils.setToken(user.value.token);
+  try {
+    const res = await AuthServices.loginUser(token);
+    user.value = res.data;
+    console.log("✅ Signed up user:", user.value);
 
-      // Redirect based on role
-      if (user.value.isAdmin) {
-        router.push({ name: "adminDashboard" });
-      } else {
-        router.push({ name: "athlete" }); // or "athleteHome"
-      }
-    })
-    .catch((error) => {
-      console.error("❌ Login error:", error);
-    });
+    // Save locally
+    Utils.setStore("user", user.value);
+    Utils.setToken(user.value.token);
+
+    if (window.updateUserState) window.updateUserState();
+
+    // Redirect based on role
+    if (user.value.isAdmin) {
+      router.push({ name: "admin" });
+    } else if (role === "athlete") {
+      router.push({ name: "athlete" });
+    } else {
+      router.push({ name: "coach" });
+    }
+  } catch (error) {
+    console.error("❌ Signup error:", error);
+  } finally {
+    loading.value = false;
+  }
 };
 
 onMounted(() => {
-  loginWithGoogle();
+  initGoogleSignUp();
 });
 </script>
 
@@ -67,5 +81,13 @@ onMounted(() => {
     <v-row justify="center">
       <div id="parent_id"></div>
     </v-row>
+
+    <!-- Loading Overlay -->
+    <v-dialog v-model="loading" persistent width="300">
+      <v-card class="pa-6 text-center">
+        <v-progress-circular indeterminate color="primary" size="40" />
+        <p class="mt-4 mb-0">Signing you in...</p>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
