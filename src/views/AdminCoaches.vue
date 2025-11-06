@@ -3,6 +3,8 @@ import { ref, onMounted } from "vue";
 import axios from "axios";
 import Utils from "../config/utils.js";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3127";
+
 const search = ref("");
 const selectedSport = ref("All Sports");
 const sports = ["All Sports"];
@@ -12,10 +14,8 @@ const loading = ref(true);
 const fetchCoachs = async () => {
   try {
     const token = Utils.getToken(); 
-    const res = await axios.get("http://localhost:3127/tracker-t7/coaches", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    const res = await axios.get(`${API_URL}/tracker-t7/coaches`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     coaches.value = res.data.map((a) => ({
       id: a.coachID,
@@ -59,7 +59,7 @@ const confirmDelete = (coach) => {
 
 const performDelete = async () => {
   try {
-    await axios.delete(`http://localhost:3127/tracker-t7/coaches/${coachToDelete.value.id}`, {
+    await axios.delete(`${API_URL}/tracker-t7/coaches/${coachToDelete.value.id}`, {
       headers: { Authorization: `Bearer ${Utils.getToken()}` },
     });
     coaches.value = coaches.value.filter(a => a.id !== coachToDelete.value.id);
@@ -80,7 +80,7 @@ const saveEdit = async () => {
     const token = Utils.getToken();
 
     await axios.put(
-      `http://localhost:3127/tracker-t7/coaches/${editedCoach.value.id}`,
+      `${API_URL}/tracker-t7/coaches/${editedCoach.value.id}`,
       {
         sport: editedCoach.value.sport,
         age: editedCoach.value.age,
@@ -91,7 +91,7 @@ const saveEdit = async () => {
     );
 
     await axios.put(
-      `http://localhost:3127/tracker-t7/users/${editedCoach.value.id}`,
+      `${API_URL}/tracker-t7/users/${editedCoach.value.id}`,
       { isAdmin: editedCoach.value.isAdmin },
       { headers: { Authorization: `Bearer ${token}` } }
     );
