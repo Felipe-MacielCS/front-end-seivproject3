@@ -8,6 +8,8 @@ import Signup from "./views/Signup.vue";
 import AthleteDashboard from "./views/AthleteDashBoard.vue";
 import CoachDashboard from "./views/CoachDashBoard.vue";
 import AdminDashboard from "./views/AdminDashBoard.vue";
+import AdminAthletes from "./views/AdminAthletes.vue";
+import AdminCoaches from "./views/AdminCoaches.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -44,8 +46,18 @@ const router = createRouter({
       component: AdminDashboard,
       meta: { role: "admin" },
     },
+    {
+      path: "/admin/athletes",
+      name: "adminAthletes",
+      component: AdminAthletes,
+    },
+        {
+      path: "/admin/coaches",
+      name: "adminCoaches",
+      component: AdminCoaches,
+    },
 
-    // --- Catch-all 404 redirect ---
+    // 404
     {
       path: "/:pathMatch(.*)*",
       redirect: "/login",

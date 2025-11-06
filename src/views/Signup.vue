@@ -1,12 +1,14 @@
 <script setup>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import SocialLogin from "../components/SocialLogin.vue";
+
 
 const selectedRole = ref(null);
 
 const selectRole = (role) => {
-  selectedRole.value = role;
-  localStorage.setItem("userRole", role); // temporarily store the role
+  selectedRole.value = role; // show SocialLogin section
+  sessionStorage.setItem("signupRole", role); // store for backend
 };
 </script>
 
@@ -17,7 +19,6 @@ const selectRole = (role) => {
     width="100vw"
     style="background-color: #f2f2f2; overflow: hidden; margin: 0; padding: 0;"
   >
-
     <div class="d-flex flex-column align-center mt-10">
       <v-card
         class="pa-8 d-flex flex-column align-center justify-center"
@@ -25,6 +26,7 @@ const selectRole = (role) => {
         width="600"
         style="background-color: #e0e0e0; border-radius: 16px;"
       >
+        <!-- Step 1: Choose role -->
         <template v-if="!selectedRole">
           <h2 class="mb-8 text-center font-weight-bold">What are you?</h2>
           <div class="d-flex justify-space-around w-100">
@@ -66,7 +68,12 @@ const selectRole = (role) => {
 
           <SocialLogin />
 
-          <v-btn class="mt-6" color="grey-darken-1" variant="elevated" @click="selectedRole = null">
+          <v-btn
+            class="mt-6"
+            color="grey-darken-1"
+            variant="elevated"
+            @click="selectedRole = null"
+          >
             Go Back
           </v-btn>
         </template>

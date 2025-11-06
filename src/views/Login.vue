@@ -14,7 +14,8 @@ import SocialLogin from "../components/SocialLogin.vue";
     <v-card
       class="pa-8 d-flex flex-column align-center justify-center"
       elevation="5"
-      width="400"
+      width="500"
+      height="300"
       style="background-color: #e0e0e0; border-radius: 16px;"
     >
       <h2 class="mb-6 text-center font-weight-bold">Login</h2>

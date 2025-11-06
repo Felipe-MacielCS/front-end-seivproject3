@@ -1,14 +1,27 @@
 <script setup>
-// This starter template is using Vue 3 <script setup> SFCs
-// Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
+import { ref, computed, onMounted } from "vue";
+import Utils from "./config/utils";
+import AdminNavBar from "./components/AdminNavBar.vue";
 import MenuBar from "./components/MenuBar.vue";
+
+const user = ref(Utils.getStore("user"));
+
+window.addEventListener("storage", () => {
+  user.value = Utils.getStore("user");
+});
+
+window.updateUserState = () => {
+  user.value = Utils.getStore("user");
+};
+
+const showAdminNavBar = computed(() => user.value && user.value.isAdmin);
+const showMenuBar = computed(() => !user.value);
 </script>
 
 <template>
   <v-app>
-    <MenuBar :key="$route.fullPath" />
-    <v-main>
-      <router-view />
-    </v-main>
+    <AdminNavBar v-if="showAdminNavBar" />
+    <MenuBar v-else-if="showMenuBar" />
+    <router-view />
   </v-app>
 </template>
