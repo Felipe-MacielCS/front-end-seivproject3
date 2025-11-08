@@ -18,36 +18,46 @@ const apiClient = axios.create({
     "Content-Type": "application/json",
     "X-Requested-With": "XMLHttpRequest",
   },
-  transformRequest: (data, headers) => {
-    let user = Utils.getStore("user");
-    if (user != null) {
-      let token = user.token;
-      let authHeader = "";
-      if (token != null && token != "") authHeader = "Bearer " + token;
-      headers["Authorization"] = authHeader;
-    }
-    return JSON.stringify(data);
-  },
-  transformResponse: function (data) {
-    data = JSON.parse(data);
-    // if (!data.success && data.code == "expired-session") {
-    //   localStorage.deleteItem("user");
-    // }
-    if (data.message !== undefined && data.message.includes("Unauthorized")) {
-      AuthServices.logoutUser(Utils.getStore("user"))
-        .then((response) => {
-          console.log(response);
-          Utils.removeItem("user");
-          Router.push({ name: "login" });
-        })
-        .catch((error) => {
-          console.log("error", error);
-        });
-      // Utils.removeItem("user")
-    }
-    // console.log(Utils.getStore("user"))
-    return data;
-  },
 });
+
+apiClient.interceptors.request.use(
+  (config) => {
+    const user = Utils.getStore("user");
+    const token = user?.token;
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      delete config.headers.Authorization;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+apiClient.interceptors.response.use(
+  (response) => {
+    return response.data;
+  },
+  async (error) => {
+    const { response } = error;
+    if (
+      response &&
+      response.status === 401 &&
+      response.data?.message?.includes("Unauthorized")
+    ) {
+      const user = Utils.getStore("user");
+      try {
+        await AuthServices.logoutUser(user);
+      } catch (e) {
+        console.error("Logout failed:", e);
+      }
+      Utils.removeItem("user");
+      Router.push({ name: "login" });
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default apiClient;

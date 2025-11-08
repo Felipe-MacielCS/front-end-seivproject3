@@ -12,7 +12,7 @@ const loading = ref(true);
 const fetchAthletes = async () => {
   try {
     const res = await AthleteServices.getAll();
-    athletes.value = res.data.map((a) => ({
+    athletes.value = res.map((a) => ({
       id: a.athleteID,
       name: a.user?.name || "Unknown",
       email: a.user?.email || "",

@@ -42,11 +42,11 @@ const handleCredentialResponse = async (response) => {
 
   try {
     const res = await AuthServices.loginUser(token);
-    user.value = res.data;
+    user.value = res;
     console.log("Signed up user:", user.value);
 
     Utils.setStore("user", user.value);
-    Utils.setToken(user.value.token);
+    Utils.setToken(user.value?.token);
 
     if (window.updateUserState) window.updateUserState();
 
