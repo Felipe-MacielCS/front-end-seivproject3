@@ -8,7 +8,6 @@ const router = useRouter();
 const user = ref({});
 const loading = ref(false);
 
-// Initialize Google Sign-Up button
 const initGoogleSignUp = () => {
   window.handleCredentialResponse = handleCredentialResponse;
   const client = import.meta.env.VITE_APP_CLIENT_ID;
@@ -21,7 +20,6 @@ const initGoogleSignUp = () => {
     callback: window.handleCredentialResponse,
   });
 
-  // Render the button inside the div
   window.google.accounts.id.renderButton(document.getElementById("parent_id"), {
     type: "standard",
     theme: "outline",
@@ -31,14 +29,11 @@ const initGoogleSignUp = () => {
   });
 };
 
-// Handle the Google Credential after signup
 const handleCredentialResponse = async (response) => {
   loading.value = true;
 
-  // Get chosen role from sessionStorage (set in SignUp.vue)
   const role = sessionStorage.getItem("signupRole") || "athlete";
 
-  // Build payload for backend
   const token = {
     credential: response.credential,
     isAthlete: role === "athlete",
@@ -48,15 +43,13 @@ const handleCredentialResponse = async (response) => {
   try {
     const res = await AuthServices.loginUser(token);
     user.value = res.data;
-    console.log("✅ Signed up user:", user.value);
+    console.log("Signed up user:", user.value);
 
-    // Save locally
     Utils.setStore("user", user.value);
     Utils.setToken(user.value.token);
 
     if (window.updateUserState) window.updateUserState();
 
-    // Redirect based on role
     if (user.value.isAdmin) {
       router.push({ name: "admin" });
     } else if (role === "athlete") {
@@ -65,7 +58,7 @@ const handleCredentialResponse = async (response) => {
       router.push({ name: "coach" });
     }
   } catch (error) {
-    console.error("❌ Signup error:", error);
+    console.error("Signup error:", error);
   } finally {
     loading.value = false;
   }
@@ -82,7 +75,6 @@ onMounted(() => {
       <div id="parent_id"></div>
     </v-row>
 
-    <!-- Loading Overlay -->
     <v-dialog v-model="loading" persistent width="300">
       <v-card class="pa-6 text-center">
         <v-progress-circular indeterminate color="primary" size="40" />
