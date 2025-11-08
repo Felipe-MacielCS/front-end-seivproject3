@@ -14,7 +14,7 @@ import AdminCoaches from "./views/AdminCoaches.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    // --- Authentication ---
+    
     {
       path: "/",
       alias: "/login",
@@ -27,7 +27,6 @@ const router = createRouter({
       component: Signup,
     },
 
-    // --- Role-Based Dashboards ---
     {
       path: "/athlete",
       name: "athlete",
@@ -51,7 +50,7 @@ const router = createRouter({
       name: "adminAthletes",
       component: AdminAthletes,
     },
-        {
+    {
       path: "/admin/coaches",
       name: "adminCoaches",
       component: AdminCoaches,

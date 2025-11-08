@@ -1,9 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import axios from "axios";
-import Utils from "../config/utils.js";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3127";
+import AthleteServices from "../services/athleteServices.js";
+import UserServices from "../services/userServices.js";
 
 const search = ref("");
 const selectedSport = ref("All Sports");
@@ -13,10 +11,7 @@ const loading = ref(true);
 
 const fetchAthletes = async () => {
   try {
-    const token = Utils.getToken(); 
-    const res = await axios.get(`${API_URL}/tracker-t7/athletes`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await AthleteServices.getAll();
     athletes.value = res.data.map((a) => ({
       id: a.athleteID,
       name: a.user?.name || "Unknown",
@@ -27,9 +22,9 @@ const fetchAthletes = async () => {
       height: a.height || "-",
       isAdmin: a.user?.isAdmin || false,
     }));
-    console.log(" Loaded athletes:", athletes.value);
+    console.log("Loaded athletes:", athletes.value);
   } catch (error) {
-    console.error(" Error fetching athletes:", error);
+    console.error("Error fetching athletes:", error);
   } finally {
     loading.value = false;
   }
@@ -59,14 +54,13 @@ const confirmDelete = (athlete) => {
 
 const performDelete = async () => {
   try {
-    await axios.delete(`${API_URL}/tracker-t7/athletes/${athleteToDelete.value.id}`, {
-      headers: { Authorization: `Bearer ${Utils.getToken()}` },
-    });
+    await AthleteServices.delete(athleteToDelete.value.id);
     athletes.value = athletes.value.filter(a => a.id !== athleteToDelete.value.id);
   } catch (error) {
     console.error("Delete failed:", error);
+  } finally {
+    deleteDialog.value = false;
   }
-  deleteDialog.value = false;
 };
 
 const confirmEdit = (athlete) => {
@@ -77,37 +71,29 @@ const confirmEdit = (athlete) => {
 
 const saveEdit = async () => {
   try {
-    const token = Utils.getToken();
+    await AthleteServices.update(editedAthlete.value.id, {
+      sport: editedAthlete.value.sport,
+      age: editedAthlete.value.age,
+      weight: editedAthlete.value.weight,
+      height: editedAthlete.value.height,
+    });
 
-    await axios.put(
-      `${API_URL}/tracker-t7/athletes/${editedAthlete.value.id}`,
-      {
-        sport: editedAthlete.value.sport,
-        age: editedAthlete.value.age,
-        weight: editedAthlete.value.weight,
-        height: editedAthlete.value.height,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    await axios.put(
-      `${API_URL}/tracker-t7/users/${editedAthlete.value.id}`,
-      { isAdmin: editedAthlete.value.isAdmin },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    await UserServices.update(editedAthlete.value.id, {
+      isAdmin: editedAthlete.value.isAdmin,
+    });
 
     const index = athletes.value.findIndex(a => a.id === editedAthlete.value.id);
     if (index !== -1) {
       athletes.value[index] = { ...editedAthlete.value };
     }
 
-    console.log(" Athlete and admin status updated");
+    console.log("Athlete and admin status updated");
   } catch (error) {
-    console.error(" Edit failed:", error);
+    console.error("Edit failed:", error);
+  } finally {
+    editDialog.value = false;
   }
-  editDialog.value = false;
 };
-
 
 </script>
 
