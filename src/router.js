@@ -11,6 +11,7 @@ import AdminDashboard from "./views/AdminDashBoard.vue";
 import AdminAthletes from "./views/AdminAthletes.vue";
 import AdminCoaches from "./views/AdminCoaches.vue";
 import AdminExercisePlans from "./views/AdminExercisePlans.vue";
+import AdminExercises from "./views/AdminExercises.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -45,6 +46,12 @@ const router = createRouter({
       name: "ExercisePlans",
       component: AdminExercisePlans,
     },
+      
+    {
+      path: "/exercises",
+      name: "exercises",
+      component: AdminExercises,
+    },
 
     {
       path: "/admin",
@@ -62,6 +69,12 @@ const router = createRouter({
       name: "adminCoaches",
       component: AdminCoaches,
     },
+    {
+      path: "/admin/exercises",
+      name: "adminExercises",
+      component: AdminExercises,
+    },
+
 
     {
       path: "/admin/exerciseplans",
