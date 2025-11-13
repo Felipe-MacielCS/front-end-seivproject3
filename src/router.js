@@ -10,6 +10,7 @@ import CoachDashboard from "./views/CoachDashBoard.vue";
 import AdminDashboard from "./views/AdminDashBoard.vue";
 import AdminAthletes from "./views/AdminAthletes.vue";
 import AdminCoaches from "./views/AdminCoaches.vue";
+import AdminExercisePlans from "./views/AdminExercisePlans.vue";
 import AdminExercises from "./views/AdminExercises.vue";
 
 const router = createRouter({
@@ -41,6 +42,12 @@ const router = createRouter({
     },
 
     {
+      path: "/exerciseplans",
+      name: "ExercisePlans",
+      component: AdminExercisePlans,
+    },
+      
+    {
       path: "/exercises",
       name: "exercises",
       component: AdminExercises,
@@ -68,6 +75,12 @@ const router = createRouter({
       component: AdminExercises,
     },
 
+
+    {
+      path: "/admin/exerciseplans",
+      name: "adminExercisePlans",
+      component: AdminExercisePlans,
+    },
 
     // 404
     {
