@@ -10,6 +10,7 @@ import CoachDashboard from "./views/CoachDashBoard.vue";
 import AdminDashboard from "./views/AdminDashBoard.vue";
 import AdminAthletes from "./views/AdminAthletes.vue";
 import AdminCoaches from "./views/AdminCoaches.vue";
+import AdminExercises from "./views/AdminExercises.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,6 +39,13 @@ const router = createRouter({
       component: CoachDashboard,
       meta: { role: "coach" },
     },
+
+    {
+      path: "/exercises",
+      name: "exercises",
+      component: AdminExercises,
+    },
+
     {
       path: "/admin",
       name: "admin",
@@ -54,6 +62,12 @@ const router = createRouter({
       name: "adminCoaches",
       component: AdminCoaches,
     },
+    {
+      path: "/admin/exercises",
+      name: "adminExercises",
+      component: AdminExercises,
+    },
+
 
     // 404
     {
