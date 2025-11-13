@@ -23,7 +23,7 @@ const cards = [
   {
     title: "Exercise Plans",
     icon: "mdi-clipboard-list-outline",
-    route: "/plans",
+    route: "/admin/exerciseplans",
   },
 ];
 

@@ -27,7 +27,7 @@ const navItems = [
   { text: "Athletes", to: "/admin/athletes" },
   { text: "Coaches", to: "/admin/coaches" },
   { text: "Exercises", to: "/admin/exercises" },
-  { text: "Exercise Plans", to: "/admin/plans" },
+  { text: "Exercise Plans", to: "/admin/exerciseplans" },
 ];
 </script>
 

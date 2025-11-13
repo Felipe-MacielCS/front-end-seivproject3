@@ -41,7 +41,7 @@ const router = createRouter({
     },
 
     {
-      path: "/exercise-plans",
+      path: "/exerciseplans",
       name: "ExercisePlans",
       component: AdminExercisePlans,
     },
