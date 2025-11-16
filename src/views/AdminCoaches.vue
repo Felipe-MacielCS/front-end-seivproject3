@@ -1,9 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import axios from "axios";
+import CoachServices from "../services/coachesServices.js";
 import Utils from "../config/utils.js";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3127";
 
 const search = ref("");
 const selectedSport = ref("All Sports");
@@ -11,12 +9,10 @@ const sports = ["All Sports"];
 const coaches = ref([]);
 const loading = ref(true);
 
-const fetchCoachs = async () => {
+
+const fetchCoaches = async () => {
   try {
-    const token = Utils.getToken(); 
-    const res = await axios.get(`${API_URL}/tracker-t7/coaches`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await CoachServices.getAll(); 
     coaches.value = res.data.map((a) => ({
       id: a.coachID,
       name: a.user?.name || "Unknown",
@@ -27,16 +23,17 @@ const fetchCoachs = async () => {
       height: a.height || "-",
       isAdmin: a.user?.isAdmin || false,
     }));
-    console.log(" Loaded coaches:", coaches.value);
+    console.log("Loaded coaches:", coaches.value);
   } catch (error) {
-    console.error(" Error fetching coaches:", error);
+    console.error("Error fetching coaches:", error);
   } finally {
     loading.value = false;
   }
 };
 
-onMounted(fetchCoachs);
+onMounted(fetchCoaches);
 
+// Dialog states
 const deleteDialog = ref(false);
 const coachToDelete = ref(null);
 
@@ -47,27 +44,30 @@ const editedCoach = ref({});
 const viewDialog = ref(false);
 const coachToView = ref(null);
 
+
 const viewCoach = (coach) => {
   coachToView.value = coach;
   viewDialog.value = true;
 };
+
 
 const confirmDelete = (coach) => {
   coachToDelete.value = coach;
   deleteDialog.value = true;
 };
 
+
 const performDelete = async () => {
   try {
-    await axios.delete(`${API_URL}/tracker-t7/coaches/${coachToDelete.value.id}`, {
-      headers: { Authorization: `Bearer ${Utils.getToken()}` },
-    });
-    coaches.value = coaches.value.filter(a => a.id !== coachToDelete.value.id);
+    await CoachServices.delete(coachToDelete.value.id);
+    coaches.value = coaches.value.filter(c => c.id !== coachToDelete.value.id);
+    console.log("Coach deleted:", coachToDelete.value.id);
   } catch (error) {
     console.error("Delete failed:", error);
   }
   deleteDialog.value = false;
 };
+
 
 const confirmEdit = (coach) => {
   coachToEdit.value = coach;
@@ -75,40 +75,34 @@ const confirmEdit = (coach) => {
   editDialog.value = true;
 };
 
+
 const saveEdit = async () => {
   try {
-    const token = Utils.getToken();
 
-    await axios.put(
-      `${API_URL}/tracker-t7/coaches/${editedCoach.value.id}`,
-      {
-        sport: editedCoach.value.sport,
-        age: editedCoach.value.age,
-        weight: editedCoach.value.weight,
-        height: editedCoach.value.height,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    await CoachServices.update(editedCoach.value.id, {
+      sport: editedCoach.value.sport,
+      age: editedCoach.value.age,
+      weight: editedCoach.value.weight,
+      height: editedCoach.value.height,
+    });
 
-    await axios.put(
-      `${API_URL}/tracker-t7/users/${editedCoach.value.id}`,
-      { isAdmin: editedCoach.value.isAdmin },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+   
+    await CoachServices.update(editedCoach.value.id, {
+      isAdmin: editedCoach.value.isAdmin,
+    });
 
-    const index = coaches.value.findIndex(a => a.id === editedCoach.value.id);
+
+    const index = coaches.value.findIndex(c => c.id === editedCoach.value.id);
     if (index !== -1) {
       coaches.value[index] = { ...editedCoach.value };
     }
 
-    console.log(" Coach and admin status updated");
+    console.log("Coach and admin status updated");
   } catch (error) {
-    console.error(" Edit failed:", error);
+    console.error("Edit failed:", error);
   }
   editDialog.value = false;
 };
-
-
 </script>
 
 <template>
