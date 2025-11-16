@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import CoachServices from "../services/coachesServices.js";
+import CoachServices from "../services/coachServices.js";
 import Utils from "../config/utils.js";
 
 const search = ref("");
