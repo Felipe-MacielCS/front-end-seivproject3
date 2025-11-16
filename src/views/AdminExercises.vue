@@ -1,9 +1,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import axios from "axios";
-import Utils from "../config/utils.js";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3127";
+import ExerciseServices from "../services/exerciseServices.js";
 
 const search = ref("");
 const exercises = ref([]);
@@ -30,12 +27,10 @@ const newExercise = ref({
 const fetchExercises = async () => {
   loading.value = true;
   try {
-    const token = Utils.getToken();
-    const res = await axios.get(`${API_URL}/tracker-t7/exercises`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await ExerciseServices.getAll();
+    const data = res.data ?? res; // defensive, in case service returns data directly
 
-    exercises.value = res.data.map((e) => ({
+    exercises.value = (data || []).map((e) => ({
       id: e.exerciseID,
       name: e.name || "Untitled",
       equipment: e.equipment || "None",
@@ -65,11 +60,7 @@ const confirmDelete = (exercise) => {
 
 const performDelete = async () => {
   try {
-    const token = Utils.getToken();
-    await axios.delete(
-      `${API_URL}/tracker-t7/exercises/${exerciseToDelete.value.id}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    await ExerciseServices.delete(exerciseToDelete.value.id);
 
     exercises.value = exercises.value.filter(
       (e) => e.id !== exerciseToDelete.value.id
@@ -90,18 +81,12 @@ const confirmEdit = (exercise) => {
 
 const saveEdit = async () => {
   try {
-    const token = Utils.getToken();
-
-    await axios.put(
-      `${API_URL}/tracker-t7/exercises/${editedExercise.value.id}`,
-      {
-        name: editedExercise.value.name,
-        equipment: editedExercise.value.equipment,
-        description: editedExercise.value.description,
-        muscle_group: editedExercise.value.muscle_group,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    await ExerciseServices.update(editedExercise.value.id, {
+      name: editedExercise.value.name,
+      equipment: editedExercise.value.equipment,
+      description: editedExercise.value.description,
+      muscle_group: editedExercise.value.muscle_group,
+    });
 
     const index = exercises.value.findIndex(
       (e) => e.id === editedExercise.value.id
@@ -139,24 +124,21 @@ const saveNewExercise = async () => {
   }
 
   try {
-    const token = Utils.getToken();
-    const res = await axios.post(
-      `${API_URL}/tracker-t7/exercises`,
-      {
-        name: newExercise.value.name,
-        equipment: newExercise.value.equipment || null,
-        description: newExercise.value.description || null,
-        muscle_group: newExercise.value.muscle_group || null,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const res = await ExerciseServices.create({
+      name: newExercise.value.name,
+      equipment: newExercise.value.equipment || null,
+      description: newExercise.value.description || null,
+      muscle_group: newExercise.value.muscle_group || null,
+    });
+
+    const created = res.data ?? res;
 
     exercises.value.push({
-      id: res.data.exerciseID,
-      name: res.data.name || "None",
-      equipment: res.data.equipment || "None",
-      description: res.data.description || "",
-      muscle_group: res.data.muscle_group || "",
+      id: created.exerciseID,
+      name: created.name || "None",
+      equipment: created.equipment || "None",
+      description: created.description || "",
+      muscle_group: created.muscle_group || "",
     });
 
     console.log("Exercise created");
@@ -166,6 +148,7 @@ const saveNewExercise = async () => {
   }
 };
 </script>
+
 
 <template>
   <v-container class="exercises-container" fluid>
