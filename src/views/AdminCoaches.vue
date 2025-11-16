@@ -12,7 +12,9 @@ const loading = ref(true);
 
 const fetchCoaches = async () => {
   try {
-    const res = await CoachServices.getAll(); 
+    const res = await CoachServices.getAll(); // Using the service here
+    console.log("API Response:", res); // Log the full response
+    console.log("API Response Data:", res.data); // Log the data part
     coaches.value = res.data.map((a) => ({
       id: a.coachID,
       name: a.user?.name || "Unknown",
