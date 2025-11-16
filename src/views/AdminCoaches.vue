@@ -1,30 +1,27 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import CoachServices from "../services/coachServices.js"; 
-import Utils from "../config/utils.js";
+import CoachServices from "../services/coachServices.js";
+import UserServices from "../services/userServices.js";
 
 const search = ref("");
+const selectedSport = ref("All Sports");
+const sports = ["All Sports"];
 const coaches = ref([]);
 const loading = ref(true);
 
 const fetchCoaches = async () => {
   try {
-    const res = await CoachServices.getAll();  
-    console.log("API Response:", res); 
-    console.log("API Response Data:", res.data); 
-
-    // Check if the response contains data and map it
-    if (res.data && res.data.length) {
-      coaches.value = res.data.map((coach) => ({
-        id: coach.coachID,  // Using coachID
-        name: coach.user?.name || "Unknown",
-        email: coach.user?.email || "", 
-        isAdmin: coach.user?.isAdmin || false,  
-      }));
-      console.log("Loaded coaches:", coaches.value);
-    } else {
-      console.error("No valid data returned for coaches");
-    }
+    const res = await CoachServices.getAll();
+    coaches.value = res.map((c) => ({
+      id: c.coachID,
+      name: c.user?.name || "Unknown",
+      email: c.user?.email || "",
+      sport: c.sport || "N/A",
+      age: c.age || "-",
+      experience: c.experience || "-",
+      isAdmin: c.user?.isAdmin || false,
+    }));
+    console.log("Loaded coaches:", coaches.value);
   } catch (error) {
     console.error("Error fetching coaches:", error);
   } finally {
@@ -33,7 +30,6 @@ const fetchCoaches = async () => {
 };
 
 onMounted(fetchCoaches);
-
 
 const deleteDialog = ref(false);
 const coachToDelete = ref(null);
@@ -56,12 +52,13 @@ const confirmDelete = (coach) => {
 const performDelete = async () => {
   try {
     await CoachServices.delete(coachToDelete.value.id);
-    coaches.value = coaches.value.filter(c => c.id !== coachToDelete.value.id);
+    coaches.value = coaches.value.filter((c) => c.id !== coachToDelete.value.id);
     console.log("Coach deleted:", coachToDelete.value.id);
   } catch (error) {
     console.error("Delete failed:", error);
+  } finally {
+    deleteDialog.value = false;
   }
-  deleteDialog.value = false;
 };
 
 const confirmEdit = (coach) => {
@@ -72,13 +69,17 @@ const confirmEdit = (coach) => {
 
 const saveEdit = async () => {
   try {
-
     await CoachServices.update(editedCoach.value.id, {
+      sport: editedCoach.value.sport,
+      age: editedCoach.value.age,
+      experience: editedCoach.value.experience,
+    });
 
+    await UserServices.update(editedCoach.value.id, {
       isAdmin: editedCoach.value.isAdmin,
     });
 
-    const index = coaches.value.findIndex(c => c.id === editedCoach.value.id);
+    const index = coaches.value.findIndex((c) => c.id === editedCoach.value.id);
     if (index !== -1) {
       coaches.value[index] = { ...editedCoach.value };
     }
@@ -86,11 +87,11 @@ const saveEdit = async () => {
     console.log("Coach and admin status updated");
   } catch (error) {
     console.error("Edit failed:", error);
+  } finally {
+    editDialog.value = false;
   }
-  editDialog.value = false;
 };
 </script>
-
 
 <template>
   <v-container class="coaches-container" fluid>
@@ -126,8 +127,8 @@ const saveEdit = async () => {
           </thead>
           <tbody>
             <tr
-              v-for="coach in coaches.filter((a) =>
-                a.name.toLowerCase().includes(search.toLowerCase())
+              v-for="coach in coaches.filter((c) =>
+                c.name.toLowerCase().includes(search.toLowerCase())
               )"
               :key="coach.name"
             >
@@ -148,82 +149,103 @@ const saveEdit = async () => {
                   @click="confirmEdit(coach)"
                 ></v-btn>
                 <v-btn
-                icon="mdi-delete"
-                size="small"
-                color="black"
-                variant="text"
-                @click="confirmDelete(coach)"
+                  icon="mdi-delete"
+                  size="small"
+                  color="black"
+                  variant="text"
+                  @click="confirmDelete(coach)"
                 ></v-btn>
               </td>
             </tr>
           </tbody>
         </v-table>
 
+        <!-- DELETE DIALOG -->
         <v-dialog v-model="deleteDialog" max-width="400">
-            <v-card>
-                <v-card-title class="text-h6 font-weight-bold">Delete</v-card-title>
-                <v-card-text>
-                <p>Are you sure you want to delete this coach?</p>
-                <p><strong>Coach Name:</strong> {{ coachToDelete?.name }}</p>
-                <p><strong>Sport:</strong> {{ coachToDelete?.sport }} </p>
-                </v-card-text>
+          <v-card>
+            <v-card-title class="text-h6 font-weight-bold">Delete</v-card-title>
+            <v-card-text>
+              <p>Are you sure you want to delete this coach?</p>
+              <p><strong>Coach Name:</strong> {{ coachToDelete?.name }}</p>
+              <p><strong>Sport:</strong> {{ coachToDelete?.sport }}</p>
+            </v-card-text>
 
-                <v-card-actions class="justify-end">
-                <v-btn color="grey" variant="outlined" @click="deleteDialog = false">
-                    Cancel
-                </v-btn>
-                <v-btn color="red" variant="elevated" @click="performDelete">
-                    Delete
-                </v-btn>
-                </v-card-actions>
-            </v-card>
+            <v-card-actions class="justify-end">
+              <v-btn color="grey" variant="outlined" @click="deleteDialog = false">
+                Cancel
+              </v-btn>
+              <v-btn color="red" variant="elevated" @click="performDelete">
+                Delete
+              </v-btn>
+            </v-card-actions>
+          </v-card>
         </v-dialog>
 
+        <!-- EDIT DIALOG -->
         <v-dialog v-model="editDialog" max-width="400">
-            <v-card>
-                <v-card-title class="text-h6 font-weight-bold">Edit — {{ coachToEdit?.name }}</v-card-title>
-                <v-card-text>
-                <v-text-field v-model="editedCoach.sport" label="Sport" density="compact"></v-text-field>
-                <v-text-field v-model="editedCoach.age" label="Age" type="number" density="compact"></v-text-field>
-                <v-text-field v-model="editedCoach.weight" label="Weight" type="number" density="compact"></v-text-field>
-                <v-text-field v-model="editedCoach.height" label="Height" type="number" density="compact"></v-text-field>
-                <v-switch v-model="editedCoach.isAdmin" label="Is Admin?" color="green" hide-details></v-switch>
-                </v-card-text>
+          <v-card>
+            <v-card-title class="text-h6 font-weight-bold">
+              Edit — {{ coachToEdit?.name }}
+            </v-card-title>
+            <v-card-text>
+              <v-text-field
+                v-model="editedCoach.sport"
+                label="Sport"
+                density="compact"
+              ></v-text-field>
+              <v-text-field
+                v-model="editedCoach.age"
+                label="Age"
+                type="number"
+                density="compact"
+              ></v-text-field>
+              <v-text-field
+                v-model="editedCoach.experience"
+                label="Experience (Years)"
+                type="number"
+                density="compact"
+              ></v-text-field>
+              <v-switch
+                v-model="editedCoach.isAdmin"
+                label="Is Admin?"
+                color="green"
+                hide-details
+              ></v-switch>
+            </v-card-text>
 
-                <v-card-actions class="justify-end">
-                <v-btn color="grey" variant="outlined" @click="editDialog = false">
-                    Cancel
-                </v-btn>
-                <v-btn color="green" variant="elevated" @click="saveEdit">
-                    Save
-                </v-btn>
-                </v-card-actions>
-            </v-card>
+            <v-card-actions class="justify-end">
+              <v-btn color="grey" variant="outlined" @click="editDialog = false">
+                Cancel
+              </v-btn>
+              <v-btn color="green" variant="elevated" @click="saveEdit">
+                Save
+              </v-btn>
+            </v-card-actions>
+          </v-card>
         </v-dialog>
 
+        <!-- VIEW DIALOG -->
         <v-dialog v-model="viewDialog" max-width="450">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
               Coach Details
             </v-card-title>
-
             <v-card-text>
               <v-list density="compact">
                 <v-list-item><strong>Name:</strong> {{ coachToView?.name }}</v-list-item>
                 <v-list-item><strong>Email:</strong> {{ coachToView?.email }}</v-list-item>
                 <v-list-item><strong>Sport:</strong> {{ coachToView?.sport }}</v-list-item>
                 <v-list-item><strong>Age:</strong> {{ coachToView?.age }}</v-list-item>
-                <v-list-item><strong>Weight:</strong> {{ coachToView?.weight }} kg</v-list-item>
-                <v-list-item><strong>Height:</strong> {{ coachToView?.height }} cm</v-list-item>
+                <v-list-item><strong>Experience:</strong> {{ coachToView?.experience }} years</v-list-item>
                 <v-list-item>
-                    <strong>Admin Status:</strong>
-                    <v-chip
-                      :color="coachToView?.isAdmin ? 'green' : 'grey'"
-                      label
-                      class="ml-2"
-                    >
-                      {{ coachToView?.isAdmin ? 'Admin' : 'Coach' }}
-                    </v-chip>
+                  <strong>Admin Status:</strong>
+                  <v-chip
+                    :color="coachToView?.isAdmin ? 'green' : 'grey'"
+                    label
+                    class="ml-2"
+                  >
+                    {{ coachToView?.isAdmin ? 'Admin' : 'Coach' }}
+                  </v-chip>
                 </v-list-item>
               </v-list>
             </v-card-text>
@@ -235,17 +257,6 @@ const saveEdit = async () => {
             </v-card-actions>
           </v-card>
         </v-dialog>
-
-
-        <div class="text-right mt-3">
-          <v-btn
-            text
-            class="text-grey-darken-2 text-decoration-underline"
-            variant="plain"
-          >
-            View More
-          </v-btn>
-        </div>
       </v-col>
     </v-row>
   </v-container>
@@ -287,11 +298,11 @@ td {
 }
 
 .small-input {
-  max-height: 36px; 
-  font-size: 0.85rem; 
+  max-height: 36px;
+  font-size: 0.85rem;
 }
 
 .small-input .v-field__input {
-  padding: 4px 8px; 
+  padding: 4px 8px;
 }
 </style>
