@@ -19,10 +19,6 @@ const fetchCoaches = async () => {
       id: a.coachID,
       name: a.user?.name || "Unknown",
       email: a.user?.email || "",
-      sport: a.sport || "N/A",
-      age: a.age || "-",
-      weight: a.weight || "-",
-      height: a.height || "-",
       isAdmin: a.user?.isAdmin || false,
     }));
     console.log("Loaded coaches:", coaches.value);
