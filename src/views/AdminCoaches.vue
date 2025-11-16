@@ -1,27 +1,30 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import CoachServices from "../services/coachServices.js";
+import CoachServices from "../services/coachServices.js"; 
 import Utils from "../config/utils.js";
 
 const search = ref("");
-const selectedSport = ref("All Sports");
-const sports = ["All Sports"];
 const coaches = ref([]);
 const loading = ref(true);
 
-
 const fetchCoaches = async () => {
   try {
-    const res = await CoachServices.getAll(); // Using the service here
-    console.log("API Response:", res); // Log the full response
-    console.log("API Response Data:", res.data); // Log the data part
-    coaches.value = res.data.map((a) => ({
-      id: a.coachID,
-      name: a.user?.name || "Unknown",
-      email: a.user?.email || "",
-      isAdmin: a.user?.isAdmin || false,
-    }));
-    console.log("Loaded coaches:", coaches.value);
+    const res = await CoachServices.getAll();  
+    console.log("API Response:", res); 
+    console.log("API Response Data:", res.data); 
+
+    // Check if the response contains data and map it
+    if (res.data && res.data.length) {
+      coaches.value = res.data.map((coach) => ({
+        id: coach.coachID,  // Using coachID
+        name: coach.user?.name || "Unknown",
+        email: coach.user?.email || "", 
+        isAdmin: coach.user?.isAdmin || false,  
+      }));
+      console.log("Loaded coaches:", coaches.value);
+    } else {
+      console.error("No valid data returned for coaches");
+    }
   } catch (error) {
     console.error("Error fetching coaches:", error);
   } finally {
@@ -31,29 +34,24 @@ const fetchCoaches = async () => {
 
 onMounted(fetchCoaches);
 
-// Dialog states
+
 const deleteDialog = ref(false);
 const coachToDelete = ref(null);
-
 const editDialog = ref(false);
 const coachToEdit = ref(null);
 const editedCoach = ref({});
-
 const viewDialog = ref(false);
 const coachToView = ref(null);
-
 
 const viewCoach = (coach) => {
   coachToView.value = coach;
   viewDialog.value = true;
 };
 
-
 const confirmDelete = (coach) => {
   coachToDelete.value = coach;
   deleteDialog.value = true;
 };
-
 
 const performDelete = async () => {
   try {
@@ -66,29 +64,19 @@ const performDelete = async () => {
   deleteDialog.value = false;
 };
 
-
 const confirmEdit = (coach) => {
   coachToEdit.value = coach;
   editedCoach.value = { ...coach };
   editDialog.value = true;
 };
 
-
 const saveEdit = async () => {
   try {
 
     await CoachServices.update(editedCoach.value.id, {
-      sport: editedCoach.value.sport,
-      age: editedCoach.value.age,
-      weight: editedCoach.value.weight,
-      height: editedCoach.value.height,
-    });
 
-   
-    await CoachServices.update(editedCoach.value.id, {
       isAdmin: editedCoach.value.isAdmin,
     });
-
 
     const index = coaches.value.findIndex(c => c.id === editedCoach.value.id);
     if (index !== -1) {
@@ -102,6 +90,7 @@ const saveEdit = async () => {
   editDialog.value = false;
 };
 </script>
+
 
 <template>
   <v-container class="coaches-container" fluid>
