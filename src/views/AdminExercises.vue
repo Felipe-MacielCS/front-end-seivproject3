@@ -28,7 +28,7 @@ const fetchExercises = async () => {
   loading.value = true;
   try {
     const res = await ExerciseServices.getAll();
-    const data = res.data ?? res; // defensive, in case service returns data directly
+    const data = res.data ?? res; 
 
     exercises.value = (data || []).map((e) => ({
       id: e.exerciseID,

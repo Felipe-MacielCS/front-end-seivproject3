@@ -1,16 +1,12 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import axios from "axios";
-import Utils from "../config/utils.js";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3127";
-
+import ExercisePlanServices from "../services/exercisePlanServices.js";
+import CoachServices from "../services/coachServices.js";
 
 const search = ref("");
 const plans = ref([]);
 const coaches = ref([]);
 const loading = ref(true);
-
 
 const deleteDialog = ref(false);
 const planToDelete = ref(null);
@@ -31,7 +27,6 @@ const newPlan = ref({
   coachID: null,
 });
 
-
 const coachOptions = computed(() =>
   coaches.value.map((c) => ({
     title: c.user?.name || `Coach #${c.coachID}`,
@@ -39,36 +34,29 @@ const coachOptions = computed(() =>
   }))
 );
 
-
 const getCoachName = (coachID) => {
   const coach = coaches.value.find((c) => c.coachID === coachID);
   return coach ? coach.user?.name || `Coach #${coachID}` : `Coach #${coachID}`;
 };
 
-
 const fetchCoaches = async () => {
   try {
-    const token = Utils.getToken();
-    const res = await axios.get(`${API_URL}/tracker-t7/coaches`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    coaches.value = res.data || [];
+    const res = await CoachServices.getAll();
+    const data = res.data ?? res;
+    coaches.value = data || [];
     console.log("Loaded coaches:", coaches.value);
   } catch (err) {
     console.error("Error fetching coaches:", err);
   }
 };
 
-
 const fetchPlans = async () => {
   loading.value = true;
   try {
-    const token = Utils.getToken();
-    const res = await axios.get(`${API_URL}/tracker-t7/exerciseplans`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await ExercisePlanServices.getAll();
+    const data = res.data ?? res;
 
-    plans.value = (res.data || []).map((p) => ({
+    plans.value = (data || []).map((p) => ({
       id: p.planID,
       name: p.name || "Untitled Plan",
       reps: p.reps ?? null,
@@ -89,13 +77,11 @@ onMounted(async () => {
   await Promise.all([fetchCoaches(), fetchPlans()]);
 });
 
-
 const filteredPlans = computed(() =>
   plans.value.filter((p) =>
     p.name.toLowerCase().includes(search.value.toLowerCase())
   )
 );
-
 
 const viewPlan = (plan) => {
   planToView.value = plan;
@@ -109,14 +95,7 @@ const confirmDelete = (plan) => {
 
 const performDelete = async () => {
   try {
-    const token = Utils.getToken();
-    await axios.delete(
-      `${API_URL}/tracker-t7/exerciseplans/${planToDelete.value.id}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
+    await ExercisePlanServices.delete(planToDelete.value.id);
     plans.value = plans.value.filter((p) => p.id !== planToDelete.value.id);
     console.log("Exercise plan deleted");
   } catch (err) {
@@ -138,18 +117,13 @@ const saveEdit = async () => {
   }
 
   try {
-    const token = Utils.getToken();
-    await axios.put(
-      `${API_URL}/tracker-t7/exerciseplans/${editedPlan.value.id}`,
-      {
-        name: editedPlan.value.name,
-        reps: editedPlan.value.reps,
-        repetitions: editedPlan.value.repetitions,
-        description: editedPlan.value.description,
-        coachID: editedPlan.value.coachID,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    await ExercisePlanServices.update(editedPlan.value.id, {
+      name: editedPlan.value.name,
+      reps: editedPlan.value.reps,
+      repetitions: editedPlan.value.repetitions,
+      description: editedPlan.value.description,
+      coachID: editedPlan.value.coachID,
+    });
 
     const idx = plans.value.findIndex((p) => p.id === editedPlan.value.id);
     if (idx !== -1) {
@@ -164,7 +138,6 @@ const saveEdit = async () => {
   }
 };
 
-
 const openAddDialog = () => {
   newPlan.value = {
     name: "",
@@ -178,24 +151,20 @@ const openAddDialog = () => {
 
 const saveNewPlan = async () => {
   if (!newPlan.value.name?.trim() || !newPlan.value.coachID) {
-    return; // backend requires these
+    return;
   }
 
   try {
-    const token = Utils.getToken();
-    const res = await axios.post(
-      `${API_URL}/tracker-t7/exerciseplans`,
-      {
-        name: newPlan.value.name,
-        reps: newPlan.value.reps,
-        repetitions: newPlan.value.repetitions,
-        description: newPlan.value.description,
-        coachID: newPlan.value.coachID,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const res = await ExercisePlanServices.create({
+      name: newPlan.value.name,
+      reps: newPlan.value.reps,
+      repetitions: newPlan.value.repetitions,
+      description: newPlan.value.description,
+      coachID: newPlan.value.coachID,
+    });
 
-    const p = res.data;
+    const p = res.data ?? res;
+
     plans.value.push({
       id: p.planID,
       name: p.name || "Untitled Plan",
