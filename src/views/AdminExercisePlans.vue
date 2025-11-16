@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import ExercisePlanServices from "../services/exercisePlanServices.js";
+import ExercisePlanServices from "../services/exerciseplanServices.js";
 import CoachServices from "../services/coachServices.js";
 
 const search = ref("");
