@@ -39,6 +39,51 @@ const viewAthlete = (athlete) => {
   athleteToView.value = athlete;
   viewDialog.value = true;
 };
+// Add Athlete Dialog
+const addDialog = ref(false);
+
+const newAthlete = ref({
+  name: "",
+  athleteNumber: "",
+  sport: "",
+  age: "",
+  weight: "",
+  height: ""
+});
+
+// Open dialog
+const openAddDialog = () => {
+  newAthlete.value = {
+    name: "",
+    athleteNumber: "",
+    sport: "",
+    age: "",
+    weight: "",
+    height: ""
+  };
+  addDialog.value = true;
+};
+
+// Save athlete
+const saveNewAthlete = async () => {
+  try {
+    await AthleteServices.create({
+      name: newAthlete.value.name,
+      athleteNumber: newAthlete.value.athleteNumber,
+      sport: newAthlete.value.sport,
+      age: newAthlete.value.age,
+      weight: newAthlete.value.weight,
+      height: newAthlete.value.height
+    });
+
+    // Reload athlete list
+    fetchAthletes();
+  } catch (error) {
+    console.error("Failed to create athlete:", error);
+  }
+
+  addDialog.value = false;
+};
 
 </script>
 
@@ -78,6 +123,7 @@ const viewAthlete = (athlete) => {
                 prepend-icon="mdi-plus"
                 rounded="lg"
                 size="large"
+                @click="openAddDialog"
                 >
                 ADD ATHLETE
                 </v-btn>
@@ -121,6 +167,86 @@ const viewAthlete = (athlete) => {
             </tr>
           </tbody>
         </v-table>
+        
+        <v-dialog v-model="addDialog" max-width="500">
+        <v-card class="pa-4">
+
+            
+            <div class="d-flex justify-space-between align-center mb-2">
+            <h2 class="font-weight-bold text-h5">Add Athlete</h2>
+            <v-btn icon="mdi-close" variant="text" @click="addDialog = false"></v-btn>
+            </div>
+
+            
+            <v-card-text>
+            <v-text-field
+                v-model="newAthlete.name"
+                label="Athlete Name"
+                density="compact"
+                variant="outlined"
+            />
+
+            <v-text-field
+                v-model="newAthlete.athleteNumber"
+                label="Athlete Number"
+                density="compact"
+                variant="outlined"
+            />
+
+            <v-text-field
+                v-model="newAthlete.sport"
+                label="Sport"
+                density="compact"
+                variant="outlined"
+            />
+
+            <v-text-field
+                v-model="newAthlete.age"
+                label="Age"
+                type="number"
+                density="compact"
+                variant="outlined"
+            />
+
+            <v-text-field
+                v-model="newAthlete.weight"
+                label="Weight"
+                type="number"
+                density="compact"
+                variant="outlined"
+            />
+
+            <v-text-field
+                v-model="newAthlete.height"
+                label="Height"
+                type="number"
+                density="compact"
+                variant="outlined"
+            />
+            </v-card-text>
+
+    
+            <v-card-actions class="justify-end">
+            <v-btn
+                color="grey"
+                variant="outlined"
+                class="mr-4"
+                @click="addDialog = false"
+            >
+                Cancel
+            </v-btn>
+
+            <v-btn
+                color="green"
+                variant="elevated"
+                @click="saveNewAthlete"
+            >
+                Save
+            </v-btn>
+            </v-card-actions>
+
+        </v-card>
+        </v-dialog>
 
         <v-dialog v-model="viewDialog" max-width="450">
           <v-card>
@@ -229,4 +355,17 @@ td.text-right {
 .gap-4 {
   gap: 16px;
 }
+.v-card {
+  border-radius: 16px !important;
+}
+
+.v-card-title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.v-text-field {
+  margin-bottom: 12px;
+}
+
 </style>
