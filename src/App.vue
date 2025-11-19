@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import Utils from "./config/utils";
 import AdminNavBar from "./components/AdminNavBar.vue";
+import CoachNavBar from "./components/CoachNavBar.vue";
 import MenuBar from "./components/MenuBar.vue";
 
 const user = ref(Utils.getStore("user"));
@@ -15,6 +16,7 @@ window.updateUserState = () => {
 };
 
 const showAdminNavBar = computed(() => user.value && user.value.isAdmin);
+const showCoachNavBar = computed(() => user.value && !user.value.isCoach);
 const showMenuBar = computed(() => !user.value);
 </script>
 
@@ -22,6 +24,7 @@ const showMenuBar = computed(() => !user.value);
   <v-app>
     <AdminNavBar v-if="showAdminNavBar" />
     <MenuBar v-else-if="showMenuBar" />
+    <CoachNavBar v-else-if="showCoachNavBar" />
     <router-view />
   </v-app>
 </template>
