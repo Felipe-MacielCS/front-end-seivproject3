@@ -12,6 +12,7 @@ import AdminAthletes from "./views/AdminAthletes.vue";
 import AdminCoaches from "./views/AdminCoaches.vue";
 import AdminExercisePlans from "./views/AdminExercisePlans.vue";
 import AdminExercises from "./views/AdminExercises.vue";
+import CoachAthletes from "./views/CoachAthletes.vue";
 
 
 const router = createRouter({
@@ -82,12 +83,20 @@ const router = createRouter({
       name: "adminExercisePlans",
       component: AdminExercisePlans,
     },
-
+    
     // 404
     {
       path: "/:pathMatch(.*)*",
       redirect: "/login",
     },
+   
+    {
+      path: "/coach/athletes",
+      name: "coachAthletes",
+      component: CoachAthletes, 
+      meta: { role: "coach" },
+    },
+
   ],
 });
 

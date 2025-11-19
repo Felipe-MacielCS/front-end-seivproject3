@@ -8,7 +8,7 @@ const cards = [
   {
     title: "Manage Athletes",
     image: "@/Assets/cado-barbell.png",
-    route: "/admin/athletes",
+    route: "/coach/athletes",
   },
   {
     title: "Manage Exercises",
@@ -18,7 +18,7 @@ const cards = [
   {
     title: "Manage Exercise Plans",
     image: "@/Assets/cado-clipboard.png",
-    route: "/admin/exerciseplans",
+    route: "/coach/exerciseplans",
   },
 ];
 
