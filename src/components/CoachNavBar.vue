@@ -24,9 +24,9 @@ onMounted(() => {
 });
 
 const navItems = [
-  { text: "Athletes", to: "/admin/athletes" },
-  { text: "Exercises", to: "/admin/exercises" },
-  { text: "Exercise Plans", to: "/admin/exerciseplans" },
+  { text: "Athletes", to: "/coach/athletes" },
+  { text: "Exercises", to: "/coach/exercises" },
+  { text: "Exercise Plans", to: "/coach/exerciseplans" },
 ];
 </script>
 
