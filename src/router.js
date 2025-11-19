@@ -13,6 +13,7 @@ import AdminCoaches from "./views/AdminCoaches.vue";
 import AdminExercisePlans from "./views/AdminExercisePlans.vue";
 import AdminExercises from "./views/AdminExercises.vue";
 
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -46,7 +47,7 @@ const router = createRouter({
       name: "ExercisePlans",
       component: AdminExercisePlans,
     },
-      
+    
     {
       path: "/exercises",
       name: "exercises",
