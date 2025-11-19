@@ -13,7 +13,7 @@ const cards = [
   {
     title: "Manage Exercises",
     icon: "mdi-dumbbell",
-    route: "/exercises",
+    route: "/coach/exercises",
   },
   {
     title: "Manage Exercise Plans",
