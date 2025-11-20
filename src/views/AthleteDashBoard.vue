@@ -3,7 +3,10 @@
 
     <v-container class="py-10" style="max-width: 1200px;">
       <!-- Welcome -->
-      <h1 class="text-h4 font-weight-bold">Welcome {{ user.name }}!</h1>
+       <v-container class="dashboard-container" fluid>
+          <h2 class="text-center mb-10 font-weight-bold"></h2>
+      </v-container>
+      <h1 class="dashboard-container font-weight-bold">Welcome {{ user.name }}!</h1>
       <p class="text-subtitle-1 mb-6">Pick an exercise plan and let's get started!</p>
 
       <!-- Date -->
