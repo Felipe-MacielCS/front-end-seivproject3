@@ -18,7 +18,7 @@ const cards = [
   {
     title: "Exercises",
     icon: "mdi-dumbbell",
-    route: "/exercises",
+    route: "/admin/exercises",
   },
   {
     title: "Exercise Plans",
