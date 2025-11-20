@@ -42,7 +42,7 @@ const navItems = [
           icon
           variant="text"
           class="pa-0"
-          @click="router.push({ name: 'coaches' })"
+          @click="router.push({ name: 'coach' })"
         >
           <v-img :src="logoURL" height="45" width="45" contain />
         </v-btn>
