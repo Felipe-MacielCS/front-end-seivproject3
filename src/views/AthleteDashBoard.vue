@@ -38,14 +38,17 @@
 
           <!-- Dropdown -->
           <v-select
-            v-model="selectedPlan"
+             v-model="selectedPlan"
             :items="exercisePlans"
+            item-title="name"
+            item-value="id"
             label="Exercise Plan"
             variant="outlined"
             class="mb-6"
+            :loading="loadingPlans"
           />
+          
 
-          <!-- Avocado Mascot -->
           <img
             src=""
             width="160"
@@ -74,15 +77,14 @@
 </template>
 
 
-
 <script setup>
 import { ref, onMounted } from "vue";
 import Utils from "../config/utils";
-import { useRouter } from "vue-router";
-import planAssignmentService from "../services/planAssignmentServices";
-import exercisePlanService from "../services/exercisePlanServices";
 
-const router = useRouter();
+import ExercisePlanServices from "../services/exerciseplanServices.js";
+import goalServices from "../services/goalServices.js";
+import resultServices from "../services/resultServices.js";
+
 const user = Utils.getStore("user") || { name: "Athlete" };
 
 const currentDate = new Date().toLocaleDateString("en-US", {
@@ -96,48 +98,106 @@ const results = ref([
   { exercise: "No data", value: "--" }
 ]);
 
+const loadResults = async (athleteID) => {
+  try {
+    const res = await resultServices.getByAthlete(athleteID);
+    const data = res.data ?? [];
+
+    if (!data.length) {
+      results.value = [{ exercise: "No data", value: "--" }];
+      return;
+    }
+
+    results.value = data.map((r) => ({
+      exercise: r.exerciseName || r.exercise || "Exercise",
+      value: r.value || r.weight || "--",
+    }));
+
+  } catch (err) {
+    console.error("Error loading results:", err);
+    results.value = [{ exercise: "No data", value: "--" }];
+  }
+};
+
+
 const goals = ref([
   { exercise: "No goals found", value: "--" }
 ]);
 
+const loadGoals = async (athleteID) => {
+  try {
+    const res = await goalServices.getByAthlete(athleteID);
+    const data = res.data ?? [];
+
+    if (!data.length) {
+      goals.value = [{ exercise: "No goals found", value: "--" }];
+      return;
+    }
+
+    goals.value = data.slice(0, 5).map((g) => ({
+      exercise: g.type || g.exerciseName || "Goal",
+      value: g.target || "--",
+    }));
+
+  } catch (err) {
+    console.error("Error loading goals:", err);
+    goals.value = [{ exercise: "No goals found", value: "--" }];
+  }
+};
+
 
 const exercisePlans = ref([]);
 const selectedPlan = ref(null);
+const loadingPlans = ref(true);
+
+const fetchAllPlans = async () => {
+  loadingPlans.value = true;
+
+  try {
+    const res = await ExercisePlanServices.getAll();
+    const data = res.data;   // <-- FIXED
+
+    console.log("RAW RESPONSE:", res);
+    console.log("DATA:", res.data);
+
+
+    exercisePlans.value = (data || []).map((p) => ({
+      id: p.planID,
+      name: p.name || "Untitled Plan",
+    }));
+
+    console.log("Loaded ALL plans:", exercisePlans.value);
+
+  } catch (err) {
+    console.error("Error loading all exercise plans:", err);
+  } finally {
+    loadingPlans.value = false;
+  }
+  
+};
+
 
 onMounted(async () => {
   const storedUser = Utils.getStore("user");
   const athleteID = storedUser?.athleteID;
 
+  console.log("Stored user:", storedUser);
+console.log("Athlete ID:", storedUser?.athleteID);
+
+
   if (!athleteID) {
-    console.error("Missing athlete ID");
+    console.error("Athlete ID missing in localStorage");
     return;
   }
 
-  try {
-    
-    const assignmentRes = await planAssignmentService.getAssignedPlans(athleteID);
-    const assignments = assignmentRes.data;
-
-    const plans = [];
-
-   
-    for (const a of assignments) {
-      const planRes = await exercisePlanService.get(a.planID);
-
-      plans.push({
-        title: planRes.data.planName,
-        id: planRes.data.id,
-      });
-    }
-
-    exercisePlans.value = plans;
-
-  } catch (err) {
-    console.error("Error loading assigned plans:", err);
-  }
+  // Load everything together
+  await Promise.all([
+    fetchAllPlans(),
+    loadGoals(athleteID),
+    loadResults(athleteID)
+  ]);
 });
 </script>
-
 
 
 
