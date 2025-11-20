@@ -15,8 +15,8 @@ const loading = ref(true);
 
 
 const athleteName = ref("Athlete");
-const goals = ref([]);          // goals just for this athlete
-const allExercises = ref([]);   // full exercise list
+const goals = ref([]);          
+const allExercises = ref([]);   
 
 
 const deleteDialog = ref(false);
