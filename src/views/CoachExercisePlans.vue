@@ -7,9 +7,11 @@ import CoachServices from "../services/coachServices.js";
 import ExerciseServices from "../services/exerciseServices.js";
 import ExercisePoolServices from "../services/exercisePoolServices.js";
 import AthleteServices from "../services/athleteServices.js";
+import PlanAssignmentServices from "../services/planAssignmentServices.js";
 
 const currentUser = ref(Utils.getStore("user") || {});
 const currentCoachID = ref(null);
+const currentPlanAssignments = ref([]);
 
 const search = ref("");
 const plans = ref([]);
@@ -127,26 +129,65 @@ const athleteOptions = computed(() =>
   }))
 );
 
-const openAssignDialog = (plan) => {
+const openAssignDialog = async (plan) => {
   planToAssign.value = plan;
   selectedAthletes.value = [];
+  currentPlanAssignments.value = [];
   assignDialog.value = true;
+
+  try {
+    const res = await PlanAssignmentServices.getAll({ planID: plan.id });
+    const data = res.data ?? res;
+    const ids = (data || []).map((row) => row.athleteID);
+
+    currentPlanAssignments.value = ids;
+    selectedAthletes.value = [...ids];
+    console.log("Loaded assignments for plan", plan.id, ":", ids);
+  } catch (err) {
+    console.error("Error fetching assignments for plan:", err);
+  }
 };
 
+
 const saveAssignments = async () => {
+  if (!planToAssign.value?.id) return;
+
   try {
-    // TODO: real API later
+    const oldSet = new Set(currentPlanAssignments.value);
+    const newSet = new Set(selectedAthletes.value);
+
+    const toAdd = [...newSet].filter((id) => !oldSet.has(id));
+    const toRemove = [...oldSet].filter((id) => !newSet.has(id));
+
+    await Promise.all([
+      ...toAdd.map((athleteID) =>
+        PlanAssignmentServices.create({
+          planID: planToAssign.value.id,
+          athleteID,
+        })
+      ),
+      ...toRemove.map((athleteID) =>
+        PlanAssignmentServices.delete(planToAssign.value.id, athleteID)
+      ),
+    ]);
+
     console.log(
-      "Assigning plan",
+      "Assignments updated for plan",
       planToAssign.value.id,
-      "to athletes",
-      selectedAthletes.value
+      "Added:",
+      toAdd,
+      "Removed:",
+      toRemove
     );
+
+    currentPlanAssignments.value = [...newSet];
+
     assignDialog.value = false;
   } catch (err) {
     console.error("Assign plan failed:", err);
   }
 };
+
 
 const fetchPlans = async () => {
   loading.value = true;
