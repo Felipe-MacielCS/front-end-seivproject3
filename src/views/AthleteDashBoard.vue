@@ -3,7 +3,7 @@
 
     <v-container class="py-10" style="max-width: 1200px;">
       <!-- Welcome -->
-      <h1 class="text-h4 font-weight-bold">Welcome Name</h1>
+      <h1 class="text-h4 font-weight-bold">Welcome {{ user.name }}!</h1>
       <p class="text-subtitle-1 mb-6">Pick an exercise plan and let's get started!</p>
 
       <!-- Date -->
@@ -74,6 +74,11 @@
 
 <script setup>
 import { ref } from "vue";
+import Utils from "../config/utils";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+const user = Utils.getStore("user") || { name: "Athlete" };
 
 const currentDate = new Date().toLocaleDateString("en-US", {
   month: "long",
@@ -108,4 +113,5 @@ const selectedPlan = ref(null);
 .text-black {
   color: black !important;
 }
+
 </style>
