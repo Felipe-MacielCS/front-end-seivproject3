@@ -15,6 +15,10 @@ import AdminExercises from "./views/AdminExercises.vue";
 import CoachAthletes from "./views/CoachAthletes.vue";
 import CoachExercisePlans from "./views/CoachExercisePlans.vue";
 import CoachExercises from "./views/CoachExercises.vue";
+import AthleteExercisePlans from "./views/AthleteExercisePlans.vue";
+import AthleteGoals from "./views/AthleteGoals.vue";
+import AthleteResults from "./views/AthleteResults.vue";
+
 
 
 
@@ -45,19 +49,6 @@ const router = createRouter({
       component: CoachDashboard,
       meta: { role: "coach" },
     },
-
-    {
-      path: "/exerciseplans",
-      name: "ExercisePlans",
-      component: AdminExercisePlans,
-    },
-    
-    {
-      path: "/exercises",
-      name: "exercises",
-      component: AdminExercises,
-    },
-
     {
       path: "/admin",
       name: "admin",
@@ -110,6 +101,24 @@ const router = createRouter({
       name: "coachExercises",
       component: CoachExercises, 
       meta: { role: "coach" },
+    },
+    {
+      path: "/athlete/exerciseplans",
+      name: "athleteExercisePlans",
+      component: AthleteExercisePlans,
+      meta: { role: "athlete" },
+    },
+    {
+      path: "/athlete/goals",
+      name: "athleteGoals",
+      component: AthleteGoals,
+      meta: { role: "athlete" },
+    },
+    {
+      path: "/athlete/results",
+      name: "athleteResults",
+      component: AthleteResults,
+      meta: { role: "athlete" },
     },
   ],
 });
