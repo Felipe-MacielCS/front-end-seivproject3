@@ -65,7 +65,7 @@ const navItems = [
       <!-- Right: User Dropdown -->
       <v-menu offset-y rounded>
         <template #activator="{ props }">
-          <v-btn icon v-bind="props">
+          <v-btn icon v-bind="props" @click="router.push('/athlete/profile')">
             <v-avatar size="40">
               <v-img
                 v-if="user?.picture"
