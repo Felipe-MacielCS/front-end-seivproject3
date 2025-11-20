@@ -4,6 +4,7 @@ import Utils from "./config/utils";
 import AdminNavBar from "./components/AdminNavBar.vue";
 import CoachNavBar from "./components/CoachNavBar.vue";
 import MenuBar from "./components/MenuBar.vue";
+import AthleteNavBar from "./components/AthleteNavBar.vue";
 
 const user = ref(Utils.getStore("user"));
 
@@ -16,8 +17,10 @@ window.updateUserState = () => {
 };
 
 const showAdminNavBar = computed(() => user.value && user.value.isAdmin);
-const showCoachNavBar = computed(() => user.value && !user.value.isCoach);
+const showCoachNavBar = computed(() => user.value && user.value.isCoach);
+const showAthleteNavBar = computed(() => user.value && user.value.userID);
 const showMenuBar = computed(() => !user.value);
+
 </script>
 
 <template>
@@ -25,6 +28,7 @@ const showMenuBar = computed(() => !user.value);
     <AdminNavBar v-if="showAdminNavBar" />
     <MenuBar v-else-if="showMenuBar" />
     <CoachNavBar v-else-if="showCoachNavBar" />
+    <AthleteNavBar v-else-if="showAthleteNavBar" />
     <router-view />
   </v-app>
 </template>

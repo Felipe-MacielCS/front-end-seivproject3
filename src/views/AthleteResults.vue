@@ -13,7 +13,7 @@ const goTo = (path) => {
 
 <template>
   <v-container class="dashboard-container" fluid>
-    <h2 class="text-center mb-10 font-weight-bold">Welcome Athlete</h2>
+    <h2 class="text-center mb-10 font-weight-bold">Athlete Results</h2>
   </v-container>
 </template>
 
