@@ -1,7 +1,17 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
+import Utils from "../config/utils.js";
+
 import ExercisePlanServices from "../services/exerciseplanServices.js";
 import CoachServices from "../services/coachServices.js";
+import ExerciseServices from "../services/exerciseServices.js";
+import ExercisePoolServices from "../services/exercisePoolServices.js";
+import AthleteServices from "../services/athleteServices.js";
+import PlanAssignmentServices from "../services/planAssignmentServices.js";
+
+const currentUser = ref(Utils.getStore("user") || {});
+const currentCoachID = ref(null);
+const currentPlanAssignments = ref([]);
 
 const search = ref("");
 const plans = ref([]);
@@ -21,18 +31,8 @@ const planToView = ref(null);
 const addDialog = ref(false);
 const newPlan = ref({
   name: "",
-  reps: null,
-  repetitions: null,
   description: "",
-  coachID: null,
 });
-
-const coachOptions = computed(() =>
-  coaches.value.map((c) => ({
-    title: c.user?.name || `Coach #${c.coachID}`,
-    value: c.coachID,
-  }))
-);
 
 const getCoachName = (coachID) => {
   const coach = coaches.value.find((c) => c.coachID === coachID);
@@ -45,10 +45,149 @@ const fetchCoaches = async () => {
     const data = res.data ?? res;
     coaches.value = data || [];
     console.log("Loaded coaches:", coaches.value);
+
+    if (currentUser.value && currentUser.value.userID) {
+      const mine = coaches.value.find(
+        (c) =>
+          c.userID === currentUser.value.userID ||
+          c.user?.userID === currentUser.value.userID
+      );
+      if (mine) {
+        currentCoachID.value = mine.coachID;
+        console.log("Current coach ID:", currentCoachID.value);
+      } else {
+        console.warn(
+          "No coach profile found for current userID:",
+          currentUser.value.userID
+        );
+      }
+    }
   } catch (err) {
     console.error("Error fetching coaches:", err);
   }
 };
+
+const exercises = ref([]);
+const poolEntries = ref([]); 
+
+const manageDialog = ref(false);
+const planForExercises = ref(null);
+
+const newPoolEntry = ref({
+  exerciseID: null,
+  sets: null,
+  repetitions: null,
+});
+
+const editPoolDialog = ref(false);
+const poolEntryToEdit = ref(null);
+const editedPoolEntry = ref({});
+
+const exerciseOptions = computed(() =>
+  exercises.value.map((e) => ({
+    title: e.name || `Exercise #${e.exerciseID}`,
+    value: e.exerciseID,
+  }))
+);
+
+const planExercises = computed(() => {
+  if (!planForExercises.value) return [];
+  return poolEntries.value
+    .filter((pe) => pe.planID === planForExercises.value.id)
+    .map((pe) => {
+      const ex = exercises.value.find((e) => e.exerciseID === pe.exerciseID);
+      return {
+        planID: pe.planID,
+        exerciseID: pe.exerciseID,
+        sets: pe.sets,
+        repetitions: pe.repetitions,
+        exerciseName: ex?.name || `Exercise #${pe.exerciseID}`,
+      };
+    });
+});
+
+const athletes = ref([]);
+const assignDialog = ref(false);
+const planToAssign = ref(null);
+const selectedAthletes = ref([]);
+
+const fetchAthletes = async () => {
+  try {
+    const res = await AthleteServices.getAll();
+    const data = res.data ?? res;
+    athletes.value = data || [];
+    console.log("Loaded athletes:", athletes.value);
+  } catch (err) {
+    console.error("Error fetching athletes:", err);
+  }
+};
+
+const athleteOptions = computed(() =>
+  athletes.value.map((a) => ({
+    title: a.user?.name || `Athlete #${a.athleteID}`,
+    value: a.athleteID,
+  }))
+);
+
+const openAssignDialog = async (plan) => {
+  planToAssign.value = plan;
+  selectedAthletes.value = [];
+  currentPlanAssignments.value = [];
+  assignDialog.value = true;
+
+  try {
+    const res = await PlanAssignmentServices.getAll({ planID: plan.id });
+    const data = res.data ?? res;
+    const ids = (data || []).map((row) => row.athleteID);
+
+    currentPlanAssignments.value = ids;
+    selectedAthletes.value = [...ids];
+    console.log("Loaded assignments for plan", plan.id, ":", ids);
+  } catch (err) {
+    console.error("Error fetching assignments for plan:", err);
+  }
+};
+
+
+const saveAssignments = async () => {
+  if (!planToAssign.value?.id) return;
+
+  try {
+    const oldSet = new Set(currentPlanAssignments.value);
+    const newSet = new Set(selectedAthletes.value);
+
+    const toAdd = [...newSet].filter((id) => !oldSet.has(id));
+    const toRemove = [...oldSet].filter((id) => !newSet.has(id));
+
+    await Promise.all([
+      ...toAdd.map((athleteID) =>
+        PlanAssignmentServices.create({
+          planID: planToAssign.value.id,
+          athleteID,
+        })
+      ),
+      ...toRemove.map((athleteID) =>
+        PlanAssignmentServices.delete(planToAssign.value.id, athleteID)
+      ),
+    ]);
+
+    console.log(
+      "Assignments updated for plan",
+      planToAssign.value.id,
+      "Added:",
+      toAdd,
+      "Removed:",
+      toRemove
+    );
+
+    currentPlanAssignments.value = [...newSet];
+
+    assignDialog.value = false;
+  } catch (err) {
+    console.error("Assign plan failed:", err);
+  }
+};
+
 
 const fetchPlans = async () => {
   loading.value = true;
@@ -56,16 +195,20 @@ const fetchPlans = async () => {
     const res = await ExercisePlanServices.getAll();
     const data = res.data ?? res;
 
-    plans.value = (data || []).map((p) => ({
+    let raw = data || [];
+
+    if (currentCoachID.value) {
+      raw = raw.filter((p) => p.coachID === currentCoachID.value);
+    }
+
+    plans.value = raw.map((p) => ({
       id: p.planID,
       name: p.name || "Untitled Plan",
-      reps: p.reps ?? null,
-      repetitions: p.repetitions ?? null,
       description: p.description || "",
       coachID: p.coachID,
     }));
 
-    console.log("Loaded plans:", plans.value);
+    console.log("Loaded plans for this coach:", plans.value);
   } catch (err) {
     console.error("Error fetching exercise plans:", err);
   } finally {
@@ -73,8 +216,36 @@ const fetchPlans = async () => {
   }
 };
 
+const fetchExercises = async () => {
+  try {
+    const res = await ExerciseServices.getAll();
+    const data = res.data ?? res;
+    exercises.value = data || [];
+    console.log("Loaded exercises for pool:", exercises.value);
+  } catch (err) {
+    console.error("Error fetching exercises:", err);
+  }
+};
+
+const fetchPoolEntries = async () => {
+  try {
+    const res = await ExercisePoolServices.getAll();
+    const data = res.data ?? res;
+    poolEntries.value = data || [];
+    console.log("Loaded exercise pool entries:", poolEntries.value);
+  } catch (err) {
+    console.error("Error fetching exercise pool entries:", err);
+  }
+};
+
 onMounted(async () => {
-  await Promise.all([fetchCoaches(), fetchPlans()]);
+  await fetchCoaches();
+  await Promise.all([
+    fetchPlans(),
+    fetchExercises(),
+    fetchPoolEntries(),
+    fetchAthletes(),
+  ]);
 });
 
 const filteredPlans = computed(() =>
@@ -112,15 +283,13 @@ const confirmEdit = (plan) => {
 };
 
 const saveEdit = async () => {
-  if (!editedPlan.value.name?.trim() || !editedPlan.value.coachID) {
+  if (!editedPlan.value.name?.trim()) {
     return;
   }
 
   try {
     await ExercisePlanServices.update(editedPlan.value.id, {
       name: editedPlan.value.name,
-      reps: editedPlan.value.reps,
-      repetitions: editedPlan.value.repetitions,
       description: editedPlan.value.description,
       coachID: editedPlan.value.coachID,
     });
@@ -141,26 +310,22 @@ const saveEdit = async () => {
 const openAddDialog = () => {
   newPlan.value = {
     name: "",
-    reps: null,
-    repetitions: null,
     description: "",
-    coachID: null,
   };
   addDialog.value = true;
 };
 
 const saveNewPlan = async () => {
-  if (!newPlan.value.name?.trim() || !newPlan.value.coachID) {
+  if (!newPlan.value.name?.trim() || !currentCoachID.value) {
+    console.warn("Missing plan name or currentCoachID");
     return;
   }
 
   try {
     const res = await ExercisePlanServices.create({
       name: newPlan.value.name,
-      reps: newPlan.value.reps,
-      repetitions: newPlan.value.repetitions,
       description: newPlan.value.description,
-      coachID: newPlan.value.coachID,
+      coachID: currentCoachID.value,
     });
 
     const p = res.data ?? res;
@@ -168,8 +333,6 @@ const saveNewPlan = async () => {
     plans.value.push({
       id: p.planID,
       name: p.name || "Untitled Plan",
-      reps: p.reps ?? null,
-      repetitions: p.repetitions ?? null,
       description: p.description || "",
       coachID: p.coachID,
     });
@@ -180,8 +343,88 @@ const saveNewPlan = async () => {
     console.error("Create plan failed:", err);
   }
 };
-</script>
 
+const openManageExercises = (plan) => {
+  planForExercises.value = plan;
+  manageDialog.value = true;
+};
+
+const saveNewPoolEntry = async () => {
+  if (!planForExercises.value?.id || !newPoolEntry.value.exerciseID) return;
+
+  try {
+    const res = await ExercisePoolServices.create({
+      planID: planForExercises.value.id,
+      exerciseID: newPoolEntry.value.exerciseID,
+      sets: newPoolEntry.value.sets,
+      repetitions: newPoolEntry.value.repetitions,
+    });
+
+    const row = res.data ?? res;
+    poolEntries.value.push(row);
+
+    console.log("Exercise added to plan");
+    newPoolEntry.value = { exerciseID: null, sets: null, repetitions: null };
+  } catch (err) {
+    console.error("Create pool entry failed:", err);
+  }
+};
+
+const deletePoolEntry = async (exerciseID, planID) => {
+  try {
+    await ExercisePoolServices.delete(exerciseID, planID);
+    poolEntries.value = poolEntries.value.filter(
+      (pe) => !(pe.exerciseID === exerciseID && pe.planID === planID)
+    );
+    console.log("Exercise removed from plan");
+  } catch (err) {
+    console.error("Delete pool entry failed:", err);
+  }
+};
+
+const openEditPoolEntry = (entry) => {
+  poolEntryToEdit.value = entry;
+  editedPoolEntry.value = {
+    exerciseID: entry.exerciseID,
+    planID: entry.planID,
+    sets: entry.sets,
+    repetitions: entry.repetitions,
+  };
+  editPoolDialog.value = true;
+};
+
+const saveEditedPoolEntry = async () => {
+  try {
+    await ExercisePoolServices.update(
+      editedPoolEntry.value.exerciseID,
+      editedPoolEntry.value.planID,
+      {
+        sets: editedPoolEntry.value.sets,
+        repetitions: editedPoolEntry.value.repetitions,
+      }
+    );
+
+    const idx = poolEntries.value.findIndex(
+      (pe) =>
+        pe.exerciseID === editedPoolEntry.value.exerciseID &&
+        pe.planID === editedPoolEntry.value.planID
+    );
+    if (idx !== -1) {
+      poolEntries.value[idx] = {
+        ...poolEntries.value[idx],
+        sets: editedPoolEntry.value.sets,
+        repetitions: editedPoolEntry.value.repetitions,
+      };
+    }
+
+    console.log("Pool entry updated");
+  } catch (err) {
+    console.error("Update pool entry failed:", err);
+  } finally {
+    editPoolDialog.value = false;
+  }
+};
+</script>
 <template>
   <v-container class="plans-container" fluid>
     <v-row justify="center" class="mt-10">
@@ -195,7 +438,6 @@ const saveNewPlan = async () => {
           >
             Add Exercise Plan
           </v-btn>
-
           <v-text-field
             v-model="search"
             prepend-inner-icon="mdi-magnify"
@@ -206,8 +448,6 @@ const saveNewPlan = async () => {
             class="w-50 small-input"
           />
         </div>
-
-        <!-- Table -->
         <v-table class="plans-table" density="comfortable">
           <thead>
             <tr>
@@ -217,19 +457,13 @@ const saveNewPlan = async () => {
             </tr>
           </thead>
           <tbody>
-            <!-- Loading row -->
             <tr v-if="loading">
               <td colspan="3" class="text-center py-6">
                 <v-progress-circular indeterminate color="black" />
               </td>
             </tr>
 
-            <!-- Data rows -->
-            <tr
-              v-else
-              v-for="plan in filteredPlans"
-              :key="plan.id"
-            >
+            <tr v-else v-for="plan in filteredPlans" :key="plan.id">
               <td>{{ plan.name }}</td>
               <td>{{ getCoachName(plan.coachID) }}</td>
               <td class="text-right">
@@ -248,6 +482,20 @@ const saveNewPlan = async () => {
                   @click="confirmEdit(plan)"
                 />
                 <v-btn
+                  icon="mdi-clipboard-list-outline"
+                  size="small"
+                  color="black"
+                  variant="text"
+                  @click="openManageExercises(plan)"
+                />
+                <v-btn
+                  icon="mdi-account-multiple-outline"
+                  size="small"
+                  color="black"
+                  variant="text"
+                  @click="openAssignDialog(plan)"
+                />
+                <v-btn
                   icon="mdi-delete"
                   size="small"
                   color="black"
@@ -258,8 +506,6 @@ const saveNewPlan = async () => {
             </tr>
           </tbody>
         </v-table>
-
-        <!-- Delete dialog -->
         <v-dialog v-model="deleteDialog" max-width="400">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -273,7 +519,6 @@ const saveNewPlan = async () => {
                 {{ planToDelete ? getCoachName(planToDelete.coachID) : "" }}
               </p>
             </v-card-text>
-
             <v-card-actions class="justify-end">
               <v-btn
                 color="grey"
@@ -288,8 +533,6 @@ const saveNewPlan = async () => {
             </v-card-actions>
           </v-card>
         </v-dialog>
-
-        <!-- Edit dialog -->
         <v-dialog v-model="editDialog" max-width="520">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -301,24 +544,11 @@ const saveNewPlan = async () => {
                 label="Plan Name *"
                 density="compact"
               />
-              <v-select
-                v-model="editedPlan.coachID"
-                :items="coachOptions"
-                label="Coach *"
-                density="compact"
-                variant="outlined"
-              />
               <v-text-field
-                v-model="editedPlan.reps"
-                label="Reps (optional)"
-                type="number"
+                :model-value="getCoachName(editedPlan.coachID)"
+                label="Coach"
                 density="compact"
-              />
-              <v-text-field
-                v-model="editedPlan.repetitions"
-                label="Repetitions (optional)"
-                type="number"
-                density="compact"
+                readonly
               />
               <v-textarea
                 v-model="editedPlan.description"
@@ -327,7 +557,6 @@ const saveNewPlan = async () => {
                 density="compact"
               />
             </v-card-text>
-
             <v-card-actions class="justify-end">
               <v-btn
                 color="grey"
@@ -342,8 +571,6 @@ const saveNewPlan = async () => {
             </v-card-actions>
           </v-card>
         </v-dialog>
-
-        <!-- Add dialog -->
         <v-dialog v-model="addDialog" max-width="520">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -356,24 +583,11 @@ const saveNewPlan = async () => {
                 density="compact"
                 required
               />
-              <v-select
-                v-model="newPlan.coachID"
-                :items="coachOptions"
-                label="Coach *"
-                density="compact"
-                variant="outlined"
-              />
               <v-text-field
-                v-model="newPlan.reps"
-                label="Reps (optional)"
-                type="number"
+                :model-value="currentUser?.name || 'Current Coach'"
+                label="Coach"
                 density="compact"
-              />
-              <v-text-field
-                v-model="newPlan.repetitions"
-                label="Repetitions (optional)"
-                type="number"
-                density="compact"
+                readonly
               />
               <v-textarea
                 v-model="newPlan.description"
@@ -382,7 +596,6 @@ const saveNewPlan = async () => {
                 density="compact"
               />
             </v-card-text>
-
             <v-card-actions class="justify-end">
               <v-btn
                 color="grey"
@@ -397,8 +610,6 @@ const saveNewPlan = async () => {
             </v-card-actions>
           </v-card>
         </v-dialog>
-
-        <!-- View dialog -->
         <v-dialog v-model="viewDialog" max-width="500">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -414,18 +625,14 @@ const saveNewPlan = async () => {
                   {{ planToView ? getCoachName(planToView.coachID) : "" }}
                 </v-list-item>
                 <v-list-item>
-                  <strong>Reps:</strong>
-                  {{ planToView?.reps ?? "—" }}
-                </v-list-item>
-                <v-list-item>
-                  <strong>Repetitions:</strong>
-                  {{ planToView?.repetitions ?? "—" }}
-                </v-list-item>
-                <v-list-item>
                   <strong>Description:</strong>
                   {{ planToView?.description || "—" }}
                 </v-list-item>
               </v-list>
+              <div class="mt-4 text-caption text-grey-darken-1">
+                To manage exercises (sets &amp; reps), use the clipboard icon in the
+                plans table.
+              </div>
             </v-card-text>
 
             <v-card-actions class="justify-end">
@@ -435,6 +642,168 @@ const saveNewPlan = async () => {
                 @click="viewDialog = false"
               >
                 Close
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="manageDialog" max-width="700">
+          <v-card>
+            <v-card-title class="text-h6 font-weight-bold">
+              Manage Exercises — {{ planForExercises?.name }}
+            </v-card-title>
+
+            <v-card-text>
+
+              <v-row class="mb-4 add-exercise-row" align="center">
+                <v-col cols="5">
+                  <v-select
+                    v-model="newPoolEntry.exerciseID"
+                    :items="exerciseOptions"
+                    label="Exercise"
+                    density="compact"
+                    variant="outlined"
+                  />
+                </v-col>
+                <v-col cols="3">
+                  <v-text-field
+                    v-model="newPoolEntry.sets"
+                    type="number"
+                    label="Sets"
+                    density="compact"
+                    variant="outlined"
+                  />
+                </v-col>
+                <v-col cols="3">
+                  <v-text-field
+                    v-model="newPoolEntry.repetitions"
+                    type="number"
+                    label="Reps"
+                    density="compact"
+                    variant="outlined"
+                  />
+                </v-col>
+                <v-col cols="1" class="d-flex justify-center">
+                  <v-btn
+                    icon="mdi-plus"
+                    color="black"
+                    variant="elevated"
+                    class="add-btn"
+                    @click="saveNewPoolEntry"
+                  />
+                </v-col>
+              </v-row>
+              <v-table density="comfortable">
+                <thead>
+                  <tr>
+                    <th>Exercise</th>
+                    <th class="text-center">Sets</th>
+                    <th class="text-center">Reps</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="planExercises.length === 0">
+                    <td colspan="4" class="text-center py-4">
+                      No exercises in this plan yet.
+                    </td>
+                  </tr>
+                  <tr
+                    v-for="entry in planExercises"
+                    :key="entry.planID + '-' + entry.exerciseID"
+                  >
+                    <td>{{ entry.exerciseName }}</td>
+                    <td class="text-center">{{ entry.sets }}</td>
+                    <td class="text-center">{{ entry.repetitions }}</td>
+                    <td class="text-right">
+                      <v-btn
+                        icon="mdi-pencil"
+                        size="small"
+                        variant="text"
+                        @click="openEditPoolEntry(entry)"
+                      />
+                      <v-btn
+                        icon="mdi-delete"
+                        size="small"
+                        variant="text"
+                        @click="deletePoolEntry(entry.exerciseID, entry.planID)"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </v-table>
+            </v-card-text>
+            <v-card-actions class="justify-end">
+              <v-btn color="grey" variant="outlined" @click="manageDialog = false">
+                Close
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+        <v-dialog v-model="editPoolDialog" max-width="400">
+          <v-card>
+            <v-card-title class="text-h6 font-weight-bold">
+              Edit Sets / Reps
+            </v-card-title>
+            <v-card-text>
+              <v-text-field
+                v-model="editedPoolEntry.sets"
+                type="number"
+                label="Sets"
+                density="compact"
+              />
+              <v-text-field
+                v-model="editedPoolEntry.repetitions"
+                type="number"
+                label="Reps"
+                density="compact"
+              />
+            </v-card-text>
+            <v-card-actions class="justify-end">
+              <v-btn
+                color="grey"
+                variant="outlined"
+                @click="editPoolDialog = false"
+              >
+                Cancel
+              </v-btn>
+              <v-btn color="green" variant="elevated" @click="saveEditedPoolEntry">
+                Save
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+
+        <v-dialog v-model="assignDialog" max-width="500">
+          <v-card>
+            <v-card-title class="text-h6 font-weight-bold">
+              Assign Plan — {{ planToAssign?.name }}
+            </v-card-title>
+            <v-card-text>
+              <v-autocomplete
+                v-model="selectedAthletes"
+                :items="athleteOptions"
+                label="Select Athletes"
+                multiple
+                chips
+                closable-chips
+                density="compact"
+                variant="outlined"
+              />
+              <div class="mt-2 text-caption text-grey-darken-1">
+              </div>
+            </v-card-text>
+            <v-card-actions class="justify-end">
+              <v-btn
+                color="grey"
+                variant="outlined"
+                @click="assignDialog = false"
+              >
+                Cancel
+              </v-btn>
+              <v-btn color="green" variant="elevated" @click="saveAssignments">
+                Save
               </v-btn>
             </v-card-actions>
           </v-card>
@@ -496,5 +865,24 @@ td {
 
 .small-input .v-field__input {
   padding: 4px 8px;
+}
+
+/* Manage-exercises row layout */
+.add-exercise-row {
+  padding-right: 8px;
+}
+
+/* Square black + button */
+.add-btn {
+  background-color: black !important;
+  color: white !important;
+  border-radius: 10px !important;
+  width: 42px !important;
+  height: 42px !important;
+  margin-top: 4px;
+}
+
+.add-exercise-row .v-col {
+  padding-right: 6px;
 }
 </style>
