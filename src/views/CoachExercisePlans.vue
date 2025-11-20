@@ -5,7 +5,7 @@ import Utils from "../config/utils.js";
 import ExercisePlanServices from "../services/exerciseplanServices.js";
 import CoachServices from "../services/coachServices.js";
 import ExerciseServices from "../services/exerciseServices.js";
-import ExercisePoolServices from "../services/exercisePoolServices.js";
+import ExercisePoolServices from "../services/exercisepoolServices.js";
 import AthleteServices from "../services/athleteServices.js";
 import PlanAssignmentServices from "../services/planAssignmentServices.js";
 
