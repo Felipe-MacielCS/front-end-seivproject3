@@ -76,9 +76,11 @@
 
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import Utils from "../config/utils";
 import { useRouter } from "vue-router";
+import planAssignmentService from "../services/planAssignmentServices";
+import exercisePlanService from "../services/exercisePlanServices";
 
 const router = useRouter();
 const user = Utils.getStore("user") || { name: "Athlete" };
@@ -89,26 +91,53 @@ const currentDate = new Date().toLocaleDateString("en-US", {
   year: "numeric",
 });
 
-// Mock data
+
 const results = ref([
-  { exercise: "Squat", value: 250 },
-  { exercise: "Leg Press", value: 540 },
-  { exercise: "Leg Extensions", value: 215 },
-  { exercise: "Leg Curls", value: 185 },
-  { exercise: "Bulgarian Split Squads", value: 75 },
+  { exercise: "No data", value: "--" }
 ]);
 
 const goals = ref([
-  { exercise: "Squat", value: 350 },
-  { exercise: "Bench", value: 250 },
-  { exercise: "Dead Lift", value: 400 },
-  { exercise: "Leg Press", value: 540 },
-  { exercise: "Military Press", value: 135 },
+  { exercise: "No goals found", value: "--" }
 ]);
 
-const exercisePlans = ref(["Plan A", "Plan B", "Plan C"]);
+
+const exercisePlans = ref([]);
 const selectedPlan = ref(null);
+
+onMounted(async () => {
+  const storedUser = Utils.getStore("user");
+  const athleteID = storedUser?.athleteID;
+
+  if (!athleteID) {
+    console.error("Missing athlete ID");
+    return;
+  }
+
+  try {
+    
+    const assignmentRes = await planAssignmentService.getAssignedPlans(athleteID);
+    const assignments = assignmentRes.data;
+
+    const plans = [];
+
+   
+    for (const a of assignments) {
+      const planRes = await exercisePlanService.get(a.planID);
+
+      plans.push({
+        title: planRes.data.planName,
+        id: planRes.data.id,
+      });
+    }
+
+    exercisePlans.value = plans;
+
+  } catch (err) {
+    console.error("Error loading assigned plans:", err);
+  }
+});
 </script>
+
 
 
 

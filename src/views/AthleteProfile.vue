@@ -1,11 +1,10 @@
 <template>
-  <v-container class="pa-6">
+  <v-container class="dashboard-container" fluid>
     <v-row justify="center">
       <v-col cols="12" md="8">
 
         <!-- Main Profile Card -->
         <v-card elevation="4" class="pa-6">
-
           <v-row>
             <!-- Avatar -->
             <v-col cols="12" md="4" class="d-flex justify-center align-center">
@@ -17,7 +16,6 @@
             <!-- Name + Edit Button -->
             <v-col cols="12" md="8" class="d-flex flex-column justify-center">
               <h1 class="font-weight-bold text-h4">{{ athlete.name }}</h1>
-
               <v-btn color="primary" class="mt-4" @click="openEdit">
                 Edit Profile
               </v-btn>
@@ -31,7 +29,6 @@
             <p><strong>Age:</strong> {{ athlete.age }}</p>
             <p><strong>Sport:</strong> {{ athlete.sport }}</p>
           </v-card>
-
         </v-card>
       </v-col>
     </v-row>
@@ -39,49 +36,43 @@
     <!-- EDIT PROFILE DIALOG -->
     <v-dialog v-model="editDialog" max-width="600px">
       <v-card class="pa-6">
-
         <h2 class="mb-4">Edit Profile</h2>
 
-        <v-form ref="form" v-model="isValid">
+        <!-- v-form using v-slot to get validate function -->
+        <v-form v-model="isValid" v-slot="{ validate }">
           <v-text-field
             v-model="editForm.name"
             label="Name"
             :rules="[rules.required, rules.min2]"
-          ></v-text-field>
-
+          />
           <v-text-field
             v-model="editForm.weight"
             label="Weight (lb)"
             :rules="[rules.required, rules.number]"
-          ></v-text-field>
-
+          />
           <v-text-field
             v-model="editForm.height"
             label="Height"
             :rules="[rules.required]"
-          ></v-text-field>
-
+          />
           <v-text-field
             v-model="editForm.age"
             label="Age"
             :rules="[rules.required, rules.number]"
-          ></v-text-field>
-
+          />
           <v-text-field
             v-model="editForm.sport"
             label="Sport"
             :rules="[rules.required]"
-          ></v-text-field>
+          />
+
+          <v-card-actions class="mt-4">
+            <v-spacer></v-spacer>
+            <v-btn color="grey" @click="editDialog = false">Cancel</v-btn>
+            <!-- Pass validate function to saveEdit -->
+            <v-btn color="primary" @click="saveEdit(validate)">Save Changes</v-btn>
+          </v-card-actions>
         </v-form>
-
-        <v-card-actions class="mt-4">
-          <v-spacer></v-spacer>
-
-          <v-btn color="grey" @click="editDialog = false">Cancel</v-btn>
-
-          <v-btn color="primary" @click="saveEdit">Save Changes</v-btn>
-        </v-card-actions>
-
       </v-card>
     </v-dialog>
   </v-container>
@@ -99,10 +90,8 @@ const athlete = ref({
   sport: ""
 });
 
-// Dialog + form state
 const editDialog = ref(false);
 const editForm = ref({});
-const form = ref(null);
 const isValid = ref(false);
 
 const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -115,7 +104,7 @@ const rules = {
   min2: (v) => (v && v.length >= 2) || "Must be at least 2 characters."
 };
 
-// Load athlete on mount
+// Load athlete data on mount
 onMounted(async () => {
   if (athleteID) {
     const res = await athleteServices.get(athleteID);
@@ -130,18 +119,14 @@ function openEdit() {
 }
 
 // Save profile changes
-async function saveEdit() {
-  // Validate before submit
-  const valid = await form.value.validate();
+async function saveEdit(validate) {
+  const valid = validate(); // call the validate function from v-slot
   if (!valid) return;
 
   try {
     await athleteServices.update(athleteID, editForm.value);
-
-    // Reload updated data
     const res = await athleteServices.get(athleteID);
     athlete.value = res.data;
-
     editDialog.value = false;
   } catch (err) {
     console.error(err);
@@ -155,5 +140,8 @@ h1 {
 }
 p {
   font-size: 18px;
+}
+.dashboard-container {
+  padding-top: 80px; 
 }
 </style>
