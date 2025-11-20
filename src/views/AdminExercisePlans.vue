@@ -5,7 +5,6 @@ import CoachServices from "../services/coachServices.js";
 import ExerciseServices from "../services/exerciseServices.js";
 import ExercisePoolServices from "../services/exercisepoolServices.js";
 
-// ---------- STATE FOR PLANS ----------
 const search = ref("");
 const plans = ref([]);
 const coaches = ref([]);
@@ -28,7 +27,7 @@ const newPlan = ref({
   coachID: null,
 });
 
-// ---------- COACH OPTIONS ----------
+
 const coachOptions = computed(() =>
   coaches.value.map((c) => ({
     title: c.user?.name || `Coach #${c.coachID}`,
@@ -41,15 +40,15 @@ const getCoachName = (coachID) => {
   return coach ? coach.user?.name || `Coach #${coachID}` : `Coach #${coachID}`;
 };
 
-// ---------- EXERCISES & POOL (EXERCISES IN PLAN) ----------
-const exercises = ref([]);
-const poolEntries = ref([]); // all exercisePool rows
 
-// Which plan we are managing exercises for
+const exercises = ref([]);
+const poolEntries = ref([]);
+
+
 const manageDialog = ref(false);
 const planForExercises = ref(null);
 
-// form for adding/editing pool entries
+
 const newPoolEntry = ref({
   exerciseID: null,
   sets: null,
@@ -60,7 +59,7 @@ const editPoolDialog = ref(false);
 const poolEntryToEdit = ref(null);
 const editedPoolEntry = ref({});
 
-// exercise select options
+
 const exerciseOptions = computed(() =>
   exercises.value.map((e) => ({
     title: e.name || `Exercise #${e.exerciseID}`,
@@ -68,7 +67,7 @@ const exerciseOptions = computed(() =>
   }))
 );
 
-// exercises for currently selected plan (with names)
+
 const planExercises = computed(() => {
   if (!planForExercises.value) return [];
   return poolEntries.value
@@ -85,7 +84,7 @@ const planExercises = computed(() => {
     });
 });
 
-// ---------- FETCH HELPERS ----------
+
 const fetchCoaches = async () => {
   try {
     const res = await CoachServices.getAll();
@@ -149,20 +148,20 @@ onMounted(async () => {
   ]);
 });
 
-// ---------- FILTERED PLANS ----------
+
 const filteredPlans = computed(() =>
   plans.value.filter((p) =>
     p.name.toLowerCase().includes(search.value.toLowerCase())
   )
 );
 
-// ---------- PLAN VIEW ----------
+
 const viewPlan = (plan) => {
   planToView.value = plan;
   viewDialog.value = true;
 };
 
-// ---------- PLAN DELETE ----------
+
 const confirmDelete = (plan) => {
   planToDelete.value = plan;
   deleteDialog.value = true;
@@ -180,7 +179,6 @@ const performDelete = async () => {
   }
 };
 
-// ---------- PLAN EDIT ----------
 const confirmEdit = (plan) => {
   planToEdit.value = plan;
   editedPlan.value = { ...plan };
@@ -212,7 +210,7 @@ const saveEdit = async () => {
   }
 };
 
-// ---------- PLAN CREATE ----------
+
 const openAddDialog = () => {
   newPlan.value = {
     name: "",
@@ -224,7 +222,7 @@ const openAddDialog = () => {
 
 const saveNewPlan = async () => {
   if (!newPlan.value.name?.trim() || !newPlan.value.coachID) {
-    return; // required fields
+    return;
   }
 
   try {
@@ -250,16 +248,12 @@ const saveNewPlan = async () => {
   }
 };
 
-// ---------- MANAGE EXERCISES FOR A PLAN ----------
 const openManageExercises = (plan) => {
   planForExercises.value = plan;
-  // we already have poolEntries + exercises in memory
   manageDialog.value = true;
-  // if you want to re-sync pool each time:
-  // fetchPoolEntries();
 };
 
-// add exercise to plan
+
 const saveNewPoolEntry = async () => {
   if (!planForExercises.value?.id || !newPoolEntry.value.exerciseID) return;
 
@@ -281,7 +275,7 @@ const saveNewPoolEntry = async () => {
   }
 };
 
-// delete exercise from plan
+
 const deletePoolEntry = async (exerciseID, planID) => {
   try {
     await ExercisePoolServices.delete(exerciseID, planID);
@@ -294,7 +288,7 @@ const deletePoolEntry = async (exerciseID, planID) => {
   }
 };
 
-// edit pool entry
+
 const openEditPoolEntry = (entry) => {
   poolEntryToEdit.value = entry;
   editedPoolEntry.value = {
@@ -363,7 +357,7 @@ const saveEditedPoolEntry = async () => {
           />
         </div>
 
-        <!-- Table -->
+
         <v-table class="plans-table" density="comfortable">
           <thead>
             <tr>
@@ -373,14 +367,11 @@ const saveEditedPoolEntry = async () => {
             </tr>
           </thead>
           <tbody>
-            <!-- Loading row -->
             <tr v-if="loading">
               <td colspan="3" class="text-center py-6">
                 <v-progress-circular indeterminate color="black" />
               </td>
             </tr>
-
-            <!-- Data rows -->
             <tr
               v-else
               v-for="plan in filteredPlans"
@@ -422,7 +413,6 @@ const saveEditedPoolEntry = async () => {
           </tbody>
         </v-table>
 
-        <!-- Delete dialog -->
         <v-dialog v-model="deleteDialog" max-width="400">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -452,7 +442,6 @@ const saveEditedPoolEntry = async () => {
           </v-card>
         </v-dialog>
 
-        <!-- Edit dialog (plan-level only: no reps/repetitions here anymore) -->
         <v-dialog v-model="editDialog" max-width="520">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -494,7 +483,6 @@ const saveEditedPoolEntry = async () => {
           </v-card>
         </v-dialog>
 
-        <!-- Add dialog (no reps/repetitions here either) -->
         <v-dialog v-model="addDialog" max-width="520">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -537,7 +525,6 @@ const saveEditedPoolEntry = async () => {
           </v-card>
         </v-dialog>
 
-        <!-- View dialog -->
         <v-dialog v-model="viewDialog" max-width="500">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -574,7 +561,6 @@ const saveEditedPoolEntry = async () => {
           </v-card>
         </v-dialog>
 
-        <!-- Manage Exercises dialog -->
         <v-dialog v-model="manageDialog" max-width="700">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -582,7 +568,7 @@ const saveEditedPoolEntry = async () => {
             </v-card-title>
 
             <v-card-text>
-              <!-- Add exercise to plan -->
+
               <v-row class="mb-4" align="center">
                 <v-col cols="5">
                   <v-select
@@ -621,7 +607,7 @@ const saveEditedPoolEntry = async () => {
                   </v-btn>
                 </v-col>
               </v-row>
-              <!-- Existing exercises in this plan -->
+
               <v-table density="comfortable">
                 <thead>
                   <tr>
@@ -669,7 +655,7 @@ const saveEditedPoolEntry = async () => {
           </v-card>
         </v-dialog>
 
-        <!-- Edit pool entry dialog (sets/reps per exercise) -->
+
         <v-dialog v-model="editPoolDialog" max-width="400">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -762,7 +748,7 @@ td {
 .add-exercise-btn {
   min-width: 40px;
   height: 40px;
-  border-radius: 4px; /* square-ish */
+  border-radius: 4px;
   padding: 0;
 }
 
