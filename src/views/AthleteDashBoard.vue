@@ -1,21 +1,6 @@
 <template>
   <v-container fluid class="pa-0" style="background-color: #e6f3fa; min-height: 100vh;">
 
-    <!-- Top Navigation Bar -->
-    <v-app-bar height="70" color="#9abac8" flat>
-      <v-spacer></v-spacer>
-
-      <v-btn variant="text" class="mx-4 text-black text-h6">Results</v-btn>
-      <v-btn variant="text" class="mx-4 text-black text-h6">Goals</v-btn>
-      <v-btn variant="text" class="mx-4 text-black text-h6">Exercise Plans</v-btn>
-
-      <v-spacer></v-spacer>
-
-      <v-btn icon>
-        <v-icon>mdi-account-circle</v-icon>
-      </v-btn>
-    </v-app-bar>
-
     <v-container class="py-10" style="max-width: 1200px;">
       <!-- Welcome -->
       <h1 class="text-h4 font-weight-bold">Welcome Name</h1>
