@@ -49,19 +49,6 @@ const router = createRouter({
       component: CoachDashboard,
       meta: { role: "coach" },
     },
-
-    {
-      path: "/exerciseplans",
-      name: "ExercisePlans",
-      component: AdminExercisePlans,
-    },
-    
-    {
-      path: "/exercises",
-      name: "exercises",
-      component: AdminExercises,
-    },
-
     {
       path: "/admin",
       name: "admin",
