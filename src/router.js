@@ -115,6 +115,7 @@ const router = createRouter({
       meta: { role: "athlete" },
     },
     {
+      
       path: "/athlete/goals",
       name: "athleteGoals",
       component: AthleteGoals,
