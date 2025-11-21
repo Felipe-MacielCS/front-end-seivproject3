@@ -7,6 +7,7 @@ import Utils from "../config/utils";
 
 const logoURL = ref("");
 const router = useRouter();
+const user = Utils.getStore("user");
 
 const logout = async () => {
   const user = Utils.getStore("user");

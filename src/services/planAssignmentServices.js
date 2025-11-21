@@ -1,7 +1,14 @@
+// src/services/planAssignmentServices.js
 import apiClient from "./services.js";
 
 export default {
-  getAssignedPlans(athleteID) {
-    return apiClient.get(`/planassignments/athlete/${athleteID}`);
-  }
+  getAll(params) {
+    return apiClient.get("/planassignments", { params });
+  },
+  create(data) {
+    return apiClient.post("/planassignments", data);
+  },
+  delete(planID, athleteID) {
+    return apiClient.delete(`/planassignments/${planID}/${athleteID}`);
+  },
 };

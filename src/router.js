@@ -20,6 +20,7 @@ import AthleteGoals from "./views/AthleteGoals.vue";
 import AthleteResults from "./views/AthleteResults.vue";
 import AthleteProfile from "./views/AthleteProfile.vue";
 
+import CoachGoals from "./views/CoachGoals.vue";
 
 
 
@@ -104,12 +105,19 @@ const router = createRouter({
       meta: { role: "coach" },
     },
     {
+      path: "/coach/goals/:athleteId",
+      name: "coachGoals",
+      component: CoachGoals,
+      meta: { role: "coach" },
+    },
+    {
       path: "/athlete/exerciseplans",
       name: "athleteExercisePlans",
       component: AthleteExercisePlans,
       meta: { role: "athlete" },
     },
     {
+      
       path: "/athlete/goals",
       name: "athleteGoals",
       component: AthleteGoals,

@@ -1,13 +1,26 @@
 <script setup>
 import { ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import AthleteServices from "../services/athleteServices.js";
 import UserServices from "../services/userServices.js";
+
+
 
 const search = ref("");
 const selectedSport = ref("All Sports");
 const sports = ["All Sports"];
 const athletes = ref([]);
 const loading = ref(true);
+const router = useRouter();
+const route = useRoute();
+
+
+const goToGoals = (athlete) => {
+  router.push(`/coach/goals/${athlete.id}`);
+};
+
+
+
 
 const fetchAthletes = async () => {
   try {
@@ -163,6 +176,13 @@ const saveNewAthlete = async () => {
                   variant="text"
                   @click="viewAthlete(athlete)"
                 ></v-btn>
+                 <v-btn
+                  icon="mdi-clipboard-check-outline"
+                  size="small"
+                  color="black"
+                  variant="text"
+                  @click="goToGoals(athlete)"
+                  ></v-btn>
               </td>
             </tr>
           </tbody>
