@@ -6,7 +6,7 @@
        <v-container class="dashboard-container" fluid>
           <h2 class="text-center mb-10 font-weight-bold"></h2>
       </v-container>
-      <h1 class="dashboard-container font-weight-bold">Welcome {{ user.name }}!</h1>
+      <h1 class="dashboard-container font-weight-bold">Welcome {{ athleteName }}!</h1>
       <p class="text-subtitle-1 mb-6">Pick an exercise plan and let's get started!</p>
 
       <!-- Date -->
@@ -79,131 +79,151 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import Utils from "../config/utils";
+import Utils from "../config/utils.js";
 
+import AthleteServices from "../services/athleteServices.js";
 import ExercisePlanServices from "../services/exerciseplanServices.js";
-import goalServices from "../services/goalServices.js";
-import resultServices from "../services/resultServices.js";
+import GoalServices from "../services/goalServices.js";
+import ResultServices from "../services/resultServices.js";
 
-const user = Utils.getStore("user") || { name: "Athlete" };
+// ---------- Logged-in athlete info ----------
+const athleteId = ref(null);
+const athleteName = ref("Athlete");
 
+// For the greeting we’ll still fall back to user.name if we have it
+const storedUser = Utils.getStore("user") || null;
+
+// Nice formatted date
 const currentDate = new Date().toLocaleDateString("en-US", {
   month: "long",
   day: "numeric",
   year: "numeric",
 });
 
+// ---------- RESULTS (left card) ----------
+const results = ref([{ exercise: "No data", value: "--" }]);
 
-const results = ref([
-  { exercise: "No data", value: "--" }
-]);
+const loadResults = async () => {
+  if (!athleteId.value) return;
 
-const loadResults = async (athleteID) => {
   try {
-    const res = await resultServices.getByAthlete(athleteID);
-    const data = res.data ?? [];
+    const res = await ResultServices.getAll();        // like your Goals page
+    const data = res.data ?? res;
 
-    if (!data.length) {
+    const athleteResults = (data || []).filter(
+      (r) => r.athleteID === athleteId.value
+    );
+
+    if (!athleteResults.length) {
       results.value = [{ exercise: "No data", value: "--" }];
       return;
     }
 
-    results.value = data.map((r) => ({
+    // You can decide how many to show; here we just show them all
+    results.value = athleteResults.map((r) => ({
       exercise: r.exerciseName || r.exercise || "Exercise",
       value: r.value || r.weight || "--",
     }));
-
   } catch (err) {
     console.error("Error loading results:", err);
     results.value = [{ exercise: "No data", value: "--" }];
   }
 };
 
+// ---------- GOALS (right card, Top 5) ----------
+const goals = ref([{ exercise: "No goals found", value: "--" }]);
 
-const goals = ref([
-  { exercise: "No goals found", value: "--" }
-]);
+const loadGoals = async () => {
+  if (!athleteId.value) return;
 
-const loadGoals = async (athleteID) => {
   try {
-    const res = await goalServices.getByAthlete(athleteID);
-    const data = res.data ?? [];
+    const res = await GoalServices.getAll();          // exactly like Goals page
+    const data = res.data ?? res;
 
-    if (!data.length) {
+    const athleteGoals = (data || []).filter(
+      (g) => g.athleteID === athleteId.value
+    );
+
+    if (!athleteGoals.length) {
       goals.value = [{ exercise: "No goals found", value: "--" }];
       return;
     }
 
-    goals.value = data.slice(0, 5).map((g) => ({
+    goals.value = athleteGoals.slice(0, 5).map((g) => ({
       exercise: g.type || g.exerciseName || "Goal",
       value: g.target || "--",
     }));
-
   } catch (err) {
     console.error("Error loading goals:", err);
     goals.value = [{ exercise: "No goals found", value: "--" }];
   }
 };
 
-
+// ---------- EXERCISE PLANS (center dropdown) ----------
 const exercisePlans = ref([]);
 const selectedPlan = ref(null);
 const loadingPlans = ref(true);
 
 const fetchAllPlans = async () => {
   loadingPlans.value = true;
-
   try {
     const res = await ExercisePlanServices.getAll();
-    const data = res.data;   // <-- FIXED
-
-    console.log("RAW RESPONSE:", res);
-    console.log("DATA:", res.data);
-
+    const data = res.data ?? res;                     // same robust pattern
 
     exercisePlans.value = (data || []).map((p) => ({
-      id: p.planID,
+      id: p.planID || p.id,
       name: p.name || "Untitled Plan",
     }));
 
     console.log("Loaded ALL plans:", exercisePlans.value);
-
   } catch (err) {
     console.error("Error loading all exercise plans:", err);
+    exercisePlans.value = [];
   } finally {
     loadingPlans.value = false;
   }
-  
 };
 
+// ---------- Load athlete info (copied from Goals page) ----------
+const loadAthlete = async () => {
+  const user = Utils.getStore("user");
 
-onMounted(async () => {
-  const storedUser = Utils.getStore("user");
-  const athleteID = storedUser?.athleteID;
-
-  console.log("Stored user:", storedUser);
-console.log("Athlete ID:", storedUser?.athleteID);
-
-
-  if (!athleteID) {
-    console.error("Athlete ID missing in localStorage");
+  if (!user) {
+    console.error("No logged-in user found in local storage.");
     return;
   }
 
-  // Load everything together
-  await Promise.all([
-    fetchAllPlans(),
-    loadGoals(athleteID),
-    loadResults(athleteID)
-  ]);
+  const res = await AthleteServices.getAll();
+  const list = res.data ?? res;
+
+  const athlete = (list || []).find((a) => a.userID === user.userID);
+
+  if (athlete) {
+    athleteId.value = athlete.athleteID;
+    athleteName.value = athlete.user?.name || user.name || "Athlete";
+  } else {
+    console.warn("Could not find athlete record for userID:", user.userID);
+  }
+};
+
+// ---------- INIT PAGE ----------
+onMounted(async () => {
+  try {
+    // 1) Find the athlete record first
+    await loadAthlete();
+
+    // 2) Load plans (doesn't depend on athlete)
+    await fetchAllPlans();
+
+    // 3) Only load goals/results if we found the athlete
+    if (!athleteId.value) {
+      console.error("Athlete ID still missing after loadAthlete.");
+      return;
+    }
+
+    await Promise.all([loadGoals(), loadResults()]);
+  } catch (err) {
+    console.error("Error loading athlete dashboard:", err);
+  }
 });
 </script>
-
-
-
-<style>
-.text-black {
-  color: black !important;
-}
-
-</style>
