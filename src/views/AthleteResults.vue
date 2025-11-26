@@ -1,6 +1,5 @@
 <template>
   <v-container class="results-container" fluid>
-    <!-- Title -->
     <v-row justify="center">
       <v-col cols="12">
         <h2 class="results-title text-center font-weight-bold">
@@ -11,7 +10,6 @@
 
     <v-row justify="center">
       <v-col cols="12">
-        <!-- Top bar: Add Result + Search -->
         <div class="d-flex align-center justify-space-between mb-4">
           <v-btn
             color="black"
@@ -33,7 +31,6 @@
           />
         </div>
 
-        <!-- Results table -->
         <v-table class="results-table" density="comfortable">
           <thead>
             <tr>
@@ -44,21 +41,18 @@
           </thead>
 
           <tbody>
-            <!-- Loading row -->
             <tr v-if="loading">
               <td colspan="3" class="text-center py-6">
                 <v-progress-circular indeterminate color="black" />
               </td>
             </tr>
 
-            <!-- Empty state -->
             <tr v-else-if="filteredResults.length === 0">
               <td colspan="3" class="text-center py-4">
                 No results recorded yet.
               </td>
             </tr>
 
-            <!-- Data rows -->
             <tr v-else v-for="r in filteredResults" :key="r.id">
               <td>{{ r.date }}</td>
               <td>{{ r.exerciseName }}</td>
@@ -69,7 +63,6 @@
       </v-col>
     </v-row>
 
-    <!-- Add Result Dialog -->
     <v-dialog v-model="addDialog" max-width="420">
       <v-card>
         <v-card-title class="font-weight-bold">
@@ -127,7 +120,6 @@ import AthleteServices from "../services/athleteServices.js";
 import ResultServices from "../services/resultServices.js";
 import GoalServices from "../services/goalServices.js";
 
-// ---------- State ----------
 const loading = ref(true);
 const search = ref("");
 
@@ -136,18 +128,16 @@ const athleteName = ref("Athlete");
 
 const results = ref([]);
 
-// Add Result dialog state
 const addDialog = ref(false);
 const newResult = ref({
   goalID: null,
   value: null,
-  recordDate: new Date().toISOString().slice(0, 10), // yyyy-mm-dd
+  recordDate: new Date().toISOString().slice(0, 10), 
   notes: "",
 });
 
 const goalsForAthlete = ref([]);
 
-// ---------- Load athlete (same logic style as Goals page) ----------
 const loadAthlete = async () => {
   const user = Utils.getStore("user");
 
@@ -169,7 +159,6 @@ const loadAthlete = async () => {
   }
 };
 
-// ---------- Load goals for this athlete (for the add-result dropdown) ----------
 const fetchGoals = async () => {
   if (!athleteId.value) return;
 
@@ -185,32 +174,36 @@ const fetchGoals = async () => {
     }));
 };
 
-// ---------- Load ONLY this athlete's results ----------
 const fetchResults = async () => {
   if (!athleteId.value) return;
 
-  // Requires backend route: GET /results/athlete/:athleteId
-  const res = await ResultServices.getByAthlete(athleteId.value);
+  const res = await ResultServices.getAll();
   const data = res.data ?? res;
 
-  results.value = (data || []).map((r) => {
-    const goal = r.goal || {};
-    const exercise = goal.exercise || {};
+  const athleteGoalIds = goalsForAthlete.value.map((g) => g.goalID);
 
-    // recordDate from your model
+  const filtered = (data || []).filter((r) =>
+    athleteGoalIds.includes(r.goalID)
+  );
+
+  results.value = filtered.map((r) => {
+    const matchingGoal = goalsForAthlete.value.find(
+      (g) => g.goalID === r.goalID
+    );
+
     const rawDate = r.recordDate;
     const dateStr =
       typeof rawDate === "string" ? rawDate.slice(0, 10) : "";
 
     const value = r.value;
-    const metric = goal.metric || "lb";
+    const metric = matchingGoal?.metric || "lb";
     const displayValue =
       value != null ? `${value} ${metric}` : "—";
 
     return {
       id: r.resultID || r.id,
       date: dateStr || "—",
-      exerciseName: exercise.name || goal.type || "Exercise",
+      exerciseName: matchingGoal?.label || "Goal",
       value,
       metric,
       displayValue,
@@ -219,14 +212,12 @@ const fetchResults = async () => {
   });
 };
 
-// ---------- Filtered results for search ----------
 const filteredResults = computed(() =>
   results.value.filter((r) =>
     r.exerciseName.toLowerCase().includes(search.value.toLowerCase())
   )
 );
 
-// ---------- Add Result handlers ----------
 const openAddDialog = () => {
   newResult.value = {
     goalID: null,
@@ -252,29 +243,9 @@ const saveNewResult = async () => {
       notes: newResult.value.notes || "",
     };
 
-    const res = await ResultServices.create(payload);
-    const created = res.data ?? res;
+    await ResultServices.create(payload);
 
-    const matchingGoal = goalsForAthlete.value.find(
-      (g) => g.goalID === payload.goalID
-    );
-
-    const rawDate = created.recordDate || payload.recordDate || "";
-    const dateStr =
-      typeof rawDate === "string" ? rawDate.slice(0, 10) : "";
-
-    const metric = matchingGoal?.metric || "lb";
-
-    // Add new result to top of table
-    results.value.unshift({
-      id: created.resultID || created.id,
-      date: dateStr || "—",
-      exerciseName: matchingGoal?.label || "Goal",
-      value: payload.value,
-      metric,
-      displayValue: `${payload.value} ${metric}`,
-      notes: payload.notes,
-    });
+    await fetchResults();
 
     addDialog.value = false;
   } catch (err) {
@@ -282,12 +253,11 @@ const saveNewResult = async () => {
   }
 };
 
-// ---------- Init page ----------
 onMounted(async () => {
   try {
     await loadAthlete();
-    await fetchGoals();
-    await fetchResults();
+    await fetchGoals();    
+    await fetchResults();  
   } catch (err) {
     console.error("Error loading athlete results:", err);
   } finally {
@@ -296,9 +266,10 @@ onMounted(async () => {
 });
 </script>
 
+
 <style scoped>
 .results-container {
-  padding-top: 100px; /* pushes content below navbar */
+  padding-top: 100px; 
   padding-bottom: 32px;
   max-width: 100%;
 }
