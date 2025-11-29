@@ -19,4 +19,5 @@ export default {
   deleteAll() {
     return apiClient.delete(`/athletes`);
   },
+  
 };

@@ -33,6 +33,10 @@ const newGoal = ref({
   deadline: null,
 });
 
+const deleteDialog = ref(false);
+const goalToDelete = ref(null);
+
+
 // ---------- Helpers ----------
 
 // Load all exercises so we can map exerciseID -> name
@@ -201,6 +205,31 @@ const saveNewGoal = async () => {
     console.error("Error creating goal:", err);
   }
 };
+
+const openDeleteGoal = (goal) => {
+  goalToDelete.value = { ...goal };
+  deleteDialog.value = true;
+};
+
+const confirmDeleteGoal = async () => {
+  if (!goalToDelete.value) return;
+
+  try {
+    // Call backend to delete
+    await GoalServices.delete(goalToDelete.value.id);
+
+    // Remove locally
+    goals.value = goals.value.filter(
+      (g) => g.id !== goalToDelete.value.id
+    );
+    console.log("Goal deleted");
+  } catch (error) {
+    console.error("Delete goal failed:", error);
+  } finally {
+    deleteDialog.value = false;
+    goalToDelete.value = null;
+  }
+};
 </script>
 
 <template>
@@ -272,6 +301,12 @@ const saveNewGoal = async () => {
                   variant="text"
                   color="black"
                   @click="openEditGoal(goal)"
+                />
+                <v-btn
+                  icon="mdi-delete"
+                  variant="text"
+                  color="red"
+                  @click="openDeleteGoal(goal)"
                 />
               </td>
             </tr>
@@ -392,6 +427,29 @@ const saveNewGoal = async () => {
           <v-btn variant="text" @click="addDialog = false">Cancel</v-btn>
           <v-btn color="green" variant="elevated" @click="saveNewGoal">
             Add
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <!-- Delete Goal Confirmation Dialog -->
+    <v-dialog v-model="deleteDialog" max-width="400">
+      <v-card>
+        <v-card-title class="font-weight-bold">
+        Delete Goal
+        </v-card-title>
+
+        <v-card-text>
+        Are you sure you want to delete the goal
+        <strong>{{ goalToDelete?.exerciseName }}</strong>?
+        This action cannot be undone.
+        </v-card-text>
+
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" @click="deleteDialog = false">
+          Cancel
+          </v-btn>
+          <v-btn color="red" variant="elevated" @click="confirmDeleteGoal">
+          Delete
           </v-btn>
         </v-card-actions>
       </v-card>
