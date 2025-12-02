@@ -12,7 +12,7 @@
       <h2 class="text-h5 font-weight-bold mb-8">{{ currentDate }}</h2>
 
       <v-row justify="center" align="start" no-gutters>
-        
+
         <v-col cols="12" md="4" class="pa-2">
           <v-card color="#bcd1dc" class="pa-6 rounded-lg" elevation="2">
             <h3 class="text-h6 font-weight-bold mb-4">Result from that date:</h3>
@@ -30,7 +30,7 @@
         </v-col>
 
         <v-col cols="12" md="4" class="pa-2 text-center">
-          <v-btn color="black" icon class="mb-4">
+          <v-btn color="black" icon class="mb-4" @click="handlePlay">
             <v-icon>mdi-play-circle</v-icon>
           </v-btn>
 
@@ -69,6 +69,53 @@
         </v-col>
 
       </v-row>
+
+      <v-dialog v-model="playDialog" max-width="600">
+        <v-card>
+          <v-card-title class="font-weight-bold">
+            Exercises in {{ selectedPlanName }}
+          </v-card-title>
+
+          <v-card-text>
+            <div v-if="!selectedPlan">
+              Please select an exercise plan first.
+            </div>
+            <div v-else>
+              <v-table density="comfortable">
+                <thead>
+                  <tr>
+                    <th>Exercise</th>
+                    <th class="text-center">Sets</th>
+                    <th class="text-center">Reps</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="planExercises.length === 0">
+                    <td colspan="3" class="text-center py-4">
+                      No exercises in this plan.
+                    </td>
+                  </tr>
+                  <tr
+                    v-for="(entry, idx) in planExercises"
+                    :key="idx"
+                  >
+                    <td>{{ entry.exerciseName }}</td>
+                    <td class="text-center">{{ entry.sets }}</td>
+                    <td class="text-center">{{ entry.repetitions }}</td>
+                  </tr>
+                </tbody>
+              </v-table>
+            </div>
+          </v-card-text>
+
+          <v-card-actions class="justify-end">
+            <v-btn variant="text" @click="playDialog = false">
+              Close
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
     </v-container>
 
   </v-container>
@@ -76,7 +123,7 @@
 
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import Utils from "../config/utils.js";
 
 import AthleteServices from "../services/athleteServices.js";
@@ -84,12 +131,12 @@ import ExercisePlanServices from "../services/exerciseplanServices.js";
 import GoalServices from "../services/goalServices.js";
 import ResultServices from "../services/resultServices.js";
 import ExercisePoolServices from "../services/exercisepoolServices.js";
+import ExerciseServices from "../services/exerciseServices.js"; 
 
 const athleteId = ref(null);
 const athleteName = ref("Athlete");
 
 const storedUser = Utils.getStore("user") || null;
-
 
 const currentDate = new Date().toLocaleDateString("en-US", {
   month: "long",
@@ -100,6 +147,7 @@ const currentDate = new Date().toLocaleDateString("en-US", {
 const allGoalsRaw = ref([]);    
 const allResultsRaw = ref([]);  
 const poolEntries = ref([]);    
+const exercises = ref([]);      
 
 const results = ref([{ exercise: "No data", value: "--" }]);
 const goals = ref([{ exercise: "No goals found", value: "--" }]);
@@ -107,6 +155,31 @@ const goals = ref([{ exercise: "No goals found", value: "--" }]);
 const exercisePlans = ref([]);
 const selectedPlan = ref(null);
 const loadingPlans = ref(true);
+
+const playDialog = ref(false);
+
+const selectedPlanName = computed(() => {
+  const p = exercisePlans.value.find((p) => p.id === selectedPlan.value);
+  return p?.name || "Selected Plan";
+});
+
+const planExercises = computed(() => {
+  if (!selectedPlan.value || !poolEntries.value.length) return [];
+
+  const selectedId = Number(selectedPlan.value);
+
+  return poolEntries.value
+    .filter((pe) => pe.planID === selectedId)
+    .map((pe) => {
+      const ex = exercises.value.find((e) => e.exerciseID === pe.exerciseID);
+      return {
+        exerciseID: pe.exerciseID,
+        sets: pe.sets,
+        repetitions: pe.repetitions,
+        exerciseName: ex?.name || `Exercise #${pe.exerciseID}`,
+      };
+    });
+});
 
 const loadAthlete = async () => {
   const user = Utils.getStore("user");
@@ -197,6 +270,17 @@ const loadPoolEntries = async () => {
   }
 };
 
+const loadExercises = async () => {
+  try {
+    const res = await ExerciseServices.getAll();
+    const data = res.data ?? res;
+    exercises.value = data || [];
+    console.log("Loaded exercises:", exercises.value);
+  } catch (err) {
+    console.error("Error loading exercises:", err);
+    exercises.value = [];
+  }
+};
 
 const applyFilters = () => {
   let exerciseIdsForPlan = null;
@@ -280,10 +364,17 @@ const applyFilters = () => {
   }
 };
 
-
 watch(selectedPlan, () => {
   applyFilters();
 });
+
+const handlePlay = () => {
+  if (!selectedPlan.value) {
+    alert("Please select an exercise plan first.");
+    return;
+  }
+  playDialog.value = true;
+};
 
 onMounted(async () => {
   try {
@@ -295,7 +386,12 @@ onMounted(async () => {
       return;
     }
 
-    await Promise.all([loadGoals(), loadResults(), loadPoolEntries()]);
+    await Promise.all([
+      loadGoals(),
+      loadResults(),
+      loadPoolEntries(),
+      loadExercises(), 
+    ]);
   } catch (err) {
     console.error("Error loading athlete dashboard:", err);
   }
