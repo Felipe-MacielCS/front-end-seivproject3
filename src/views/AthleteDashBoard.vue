@@ -46,7 +46,7 @@
           />
 
           <img
-            src=""
+            :src="logo"
             width="160"
             alt="mascot"
           />
@@ -87,6 +87,7 @@
                     <th>Exercise</th>
                     <th class="text-center">Sets</th>
                     <th class="text-center">Reps</th>
+                    <th class="text-center">Result</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -101,7 +102,20 @@
                   >
                     <td>{{ entry.exerciseName }}</td>
                     <td class="text-center">{{ entry.sets }}</td>
+
                     <td class="text-center">{{ entry.repetitions }}</td>
+
+                    <td class="text-center" style="width:120px;">
+                      <v-text-field
+                        v-model="resultInputs[entry.exerciseID]"
+                        type="number"
+                        hide-details
+                        density="compact"
+                        placeholder="LB"
+                        style="max-width:90px;"
+                      />
+                    </td>
+
                   </tr>
                 </tbody>
               </v-table>
@@ -109,9 +123,14 @@
           </v-card-text>
 
           <v-card-actions class="justify-end">
+
+            <v-btn color="primary" @click="saveAllResults">
+              Save All Results
+            </v-btn>
             <v-btn variant="text" @click="playDialog = false">
               Close
             </v-btn>
+
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -125,6 +144,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from "vue";
 import Utils from "../config/utils.js";
+import logo from "../Assets/cado-barbell.png";
 
 import AthleteServices from "../services/athleteServices.js";
 import ExercisePlanServices from "../services/exerciseplanServices.js";
@@ -132,9 +152,11 @@ import GoalServices from "../services/goalServices.js";
 import ResultServices from "../services/resultServices.js";
 import ExercisePoolServices from "../services/exercisepoolServices.js";
 import ExerciseServices from "../services/exerciseServices.js"; 
+import PlanAssignmentServices from "../services/planAssignmentServices.js";
 
 const athleteId = ref(null);
 const athleteName = ref("Athlete");
+const resultInputs = ref({});
 
 const storedUser = Utils.getStore("user") || null;
 
@@ -204,18 +226,38 @@ const loadAthlete = async () => {
 
 const fetchAllPlans = async () => {
   loadingPlans.value = true;
+
   try {
-    const res = await ExercisePlanServices.getAll();
-    const data = res.data ?? res;
+    if (!athleteId.value) {
+      console.warn("fetchAllPlans called before athleteId is set.");
+      exercisePlans.value = [];
+      return;
+    }
 
-    exercisePlans.value = (data || []).map((p) => ({
-      id: p.planID || p.id,
-      name: p.name || "Untitled Plan",
-    }));
+    const [plansRes, assignmentsRes] = await Promise.all([
+      ExercisePlanServices.getAll(),
+      PlanAssignmentServices.getAll(),
+    ]);
 
-    console.log("Loaded ALL plans:", exercisePlans.value);
+    const plansData = plansRes.data ?? plansRes;
+    const assignmentsData = assignmentsRes.data ?? assignmentsRes;
+
+    const myPlanIds = new Set(
+      (assignmentsData || [])
+        .filter((row) => row.athleteID === athleteId.value)
+        .map((row) => row.planID)
+    );
+
+    exercisePlans.value = (plansData || [])
+      .filter((p) => myPlanIds.has(p.planID || p.id))
+      .map((p) => ({
+        id: p.planID || p.id,
+        name: p.name || "Untitled Plan",
+      }));
+
+    console.log("Loaded assigned plans for athlete:", exercisePlans.value);
   } catch (err) {
-    console.error("Error loading all exercise plans:", err);
+    console.error("Error loading assigned exercise plans:", err);
     exercisePlans.value = [];
   } finally {
     loadingPlans.value = false;
@@ -269,6 +311,51 @@ const loadPoolEntries = async () => {
     applyFilters();
   }
 };
+
+const saveAllResults = async () => {
+  try {
+    const selectedId = Number(selectedPlan.value);
+
+    const exercisesInPlan = poolEntries.value.filter(
+      p => p.planID === selectedId
+    );
+
+    const goalByExercise = {};
+    allGoalsRaw.value.forEach(g => {
+      goalByExercise[g.exerciseID] = g.goalID;
+    });
+
+    for (const entry of exercisesInPlan) {
+      const exerciseID = entry.exerciseID;
+      const goalID = goalByExercise[exerciseID];
+
+      if (!resultInputs.value[exerciseID]) continue;
+
+      if (!goalID) {
+        console.warn("No goal for exercise:", exerciseID);
+        continue;
+      }
+
+      const payload = {
+        goalID,
+        recordDate: new Date(),
+        value: Number(resultInputs.value[exerciseID]),
+        notes: null,
+      };
+
+      await ResultServices.create(payload);
+    }
+
+    alert("Results saved!");
+    await loadResults();
+    playDialog.value = false;
+
+  } catch (err) {
+    console.error("Error saving results:", err);
+    alert("Could not save results.");
+  }
+};
+
 
 const loadExercises = async () => {
   try {
@@ -379,12 +466,13 @@ const handlePlay = () => {
 onMounted(async () => {
   try {
     await loadAthlete();
-    await fetchAllPlans();
 
     if (!athleteId.value) {
       console.error("Athlete ID still missing after loadAthlete.");
       return;
     }
+
+      await fetchAllPlans();
 
     await Promise.all([
       loadGoals(),
