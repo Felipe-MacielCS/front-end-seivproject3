@@ -17,7 +17,7 @@ const search = ref("");
 const selectedSport = ref("All Sports");
 const sports = ["All Sports"];
 
-const athletes = ref([]);       // all athletes from backend
+const athletes = ref([]);       // all athletes from the backend
 const assignments = ref([]);    // coach-athlete rows for current coach
 const loading = ref(true);
 
