@@ -19,15 +19,13 @@ import AthleteExercisePlans from "./views/AthleteExercisePlans.vue";
 import AthleteGoals from "./views/AthleteGoals.vue";
 import AthleteResults from "./views/AthleteResults.vue";
 import AthleteProfile from "./views/AthleteProfile.vue";
-
 import CoachGoals from "./views/CoachGoals.vue";
 
-
+import AthleteGoalProgress from "./views/AthleteGoalProgress.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    
     {
       path: "/",
       alias: "/login",
@@ -39,6 +37,8 @@ const router = createRouter({
       name: "signup",
       component: Signup,
     },
+
+    // Dashboards
     {
       path: "/athlete",
       name: "athlete",
@@ -57,6 +57,8 @@ const router = createRouter({
       component: AdminDashboard,
       meta: { role: "admin" },
     },
+
+    // Admin
     {
       path: "/admin/athletes",
       name: "adminAthletes",
@@ -72,36 +74,29 @@ const router = createRouter({
       name: "adminExercises",
       component: AdminExercises,
     },
-
-
     {
       path: "/admin/exerciseplans",
       name: "adminExercisePlans",
       component: AdminExercisePlans,
     },
-    
-    // 404
-    {
-      path: "/:pathMatch(.*)*",
-      redirect: "/login",
-    },
-   
+
+    // Coach
     {
       path: "/coach/athletes",
       name: "coachAthletes",
-      component: CoachAthletes, 
+      component: CoachAthletes,
       meta: { role: "coach" },
     },
     {
       path: "/coach/exerciseplans",
       name: "coachExercisePlans",
-      component: CoachExercisePlans, 
+      component: CoachExercisePlans,
       meta: { role: "coach" },
     },
     {
       path: "/coach/exercises",
       name: "coachExercises",
-      component: CoachExercises, 
+      component: CoachExercises,
       meta: { role: "coach" },
     },
     {
@@ -110,6 +105,8 @@ const router = createRouter({
       component: CoachGoals,
       meta: { role: "coach" },
     },
+
+    // Athlete
     {
       path: "/athlete/exerciseplans",
       name: "athleteExercisePlans",
@@ -117,10 +114,15 @@ const router = createRouter({
       meta: { role: "athlete" },
     },
     {
-      
       path: "/athlete/goals",
       name: "athleteGoals",
       component: AthleteGoals,
+      meta: { role: "athlete" },
+    },
+    {
+      path: "/athlete/goals/:goalId/progress",
+      name: "athleteGoalProgress",
+      component: AthleteGoalProgress,
       meta: { role: "athlete" },
     },
     {
@@ -134,6 +136,12 @@ const router = createRouter({
       name: "athleteProfile",
       component: AthleteProfile,
       meta: { role: "athlete" },
+    },
+
+    // 404
+    {
+      path: "/:pathMatch(.*)*",
+      redirect: "/login",
     },
   ],
 });

@@ -1,9 +1,12 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
+import { useRouter } from "vue-router";
 import Utils from "../config/utils.js";
 import AthleteServices from "../services/athleteServices.js";
 import GoalServices from "../services/goalServices.js";
 import ExerciseServices from "../services/exerciseServices.js";
+
+const router = useRouter();
 
 const loading = ref(true);
 const search = ref("");
@@ -35,7 +38,6 @@ const newGoal = ref({
 
 const deleteDialog = ref(false);
 const goalToDelete = ref(null);
-
 
 // ---------- Helpers ----------
 
@@ -215,10 +217,8 @@ const confirmDeleteGoal = async () => {
   if (!goalToDelete.value) return;
 
   try {
-    // Call backend to delete
     await GoalServices.delete(goalToDelete.value.id);
 
-    // Remove locally
     goals.value = goals.value.filter(
       (g) => g.id !== goalToDelete.value.id
     );
@@ -229,6 +229,11 @@ const confirmDeleteGoal = async () => {
     deleteDialog.value = false;
     goalToDelete.value = null;
   }
+};
+
+// ---------- NEW: navigate to progress page ----------
+const goToProgress = (goal) => {
+  router.push(`/athlete/goals/${goal.id}/progress`);
 };
 </script>
 
@@ -301,6 +306,13 @@ const confirmDeleteGoal = async () => {
                   variant="text"
                   color="black"
                   @click="openEditGoal(goal)"
+                />
+                <!-- NEW: progress button -->
+                <v-btn
+                  icon="mdi-chart-line"
+                  variant="text"
+                  color="green"
+                  @click="goToProgress(goal)"
                 />
                 <v-btn
                   icon="mdi-delete"
@@ -431,25 +443,26 @@ const confirmDeleteGoal = async () => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
     <!-- Delete Goal Confirmation Dialog -->
     <v-dialog v-model="deleteDialog" max-width="400">
       <v-card>
         <v-card-title class="font-weight-bold">
-        Delete Goal
+          Delete Goal
         </v-card-title>
 
         <v-card-text>
-        Are you sure you want to delete the goal
-        <strong>{{ goalToDelete?.exerciseName }}</strong>?
-        This action cannot be undone.
+          Are you sure you want to delete the goal
+          <strong>{{ goalToDelete?.exerciseName }}</strong>?
+          This action cannot be undone.
         </v-card-text>
 
         <v-card-actions class="justify-end">
           <v-btn variant="text" @click="deleteDialog = false">
-          Cancel
+            Cancel
           </v-btn>
           <v-btn color="red" variant="elevated" @click="confirmDeleteGoal">
-          Delete
+            Delete
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -459,7 +472,7 @@ const confirmDeleteGoal = async () => {
 
 <style scoped>
 .goals-container {
-  padding-top: 100px; /* pushes content below navbar */
+  padding-top: 100px;
   padding-bottom: 32px;
   max-width: 100%;
 }
