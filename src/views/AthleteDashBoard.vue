@@ -9,7 +9,19 @@
       <h1 class="dashboard-container font-weight-bold">Welcome {{ athleteName }}!</h1>
       <p class="text-subtitle-1 mb-6">Pick an exercise plan and let's get started!</p>
 
-      <h2 class="text-h5 font-weight-bold mb-8">{{ currentDate }}</h2>
+      <v-row class="mb-8" align="center">
+        <v-col cols="12" md="4">
+          <v-text-field
+            v-model="selectedDateString"
+            label="Select Date"
+            prepend-icon="mdi-calendar"
+            type="date"
+            variant="outlined"
+            density="comfortable"
+            @update:model-value="handleDateChange"
+          ></v-text-field>
+        </v-col>
+      </v-row>
 
       <v-row justify="center" align="start" no-gutters>
 
@@ -157,6 +169,8 @@ import PlanAssignmentServices from "../services/planAssignmentServices.js";
 const athleteId = ref(null);
 const athleteName = ref("Athlete");
 const resultInputs = ref({});
+const selectedDate = ref(new Date());
+const selectedDateString = ref(new Date().toISOString().split('T')[0]);
 
 const storedUser = Utils.getStore("user") || null;
 
@@ -165,6 +179,12 @@ const currentDate = new Date().toLocaleDateString("en-US", {
   day: "numeric",
   year: "numeric",
 });
+
+const handleDateChange = (newDate) => {
+  if (newDate) {
+    selectedDate.value = new Date(newDate);
+  }
+};
 
 const allGoalsRaw = ref([]);    
 const allResultsRaw = ref([]);  
@@ -338,7 +358,7 @@ const saveAllResults = async () => {
 
       const payload = {
         goalID,
-        recordDate: new Date(),
+        recordDate: selectedDateString.value,
         value: Number(resultInputs.value[exerciseID]),
         notes: null,
       };
@@ -441,8 +461,20 @@ const applyFilters = () => {
     );
   }
 
+  if (selectedDate.value) {
+    const selectedDateObj = new Date(selectedDate.value);
+    selectedDateObj.setHours(0, 0, 0, 0);
+    
+    rList = rList.filter((r) => {
+      if (!r.recordDate) return false;
+      const resultDate = new Date(r.recordDate);
+      resultDate.setHours(0, 0, 0, 0);
+      return resultDate.getTime() === selectedDateObj.getTime();
+    });
+  }
+
   if (!rList.length) {
-    results.value = [{ exercise: "No results for this plan", value: "--" }];
+    results.value = [{ exercise: "No results for this date", value: "--" }];
   } else {
     results.value = rList.map((r) => ({
       exercise: r.exerciseName,
@@ -452,6 +484,10 @@ const applyFilters = () => {
 };
 
 watch(selectedPlan, () => {
+  applyFilters();
+});
+
+watch(selectedDate, () => {
   applyFilters();
 });
 
