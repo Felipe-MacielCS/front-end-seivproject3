@@ -193,11 +193,10 @@ const saveNewAthlete = async () => {
 
             
             <div class="d-flex justify-space-between align-center mb-2">
-            <h2 class="font-weight-bold text-h5">Add Athlete</h2>
+            <!-- <h2 class="font-weight-bold text-h5">Add Athlete</h2> -->
             <v-btn icon="mdi-close" variant="text" @click="addDialog = false"></v-btn>
             </div>
 
-            
             <v-card-text>
             <v-text-field
                 v-model="newAthlete.name"
