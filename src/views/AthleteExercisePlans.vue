@@ -1,12 +1,14 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 
+import Utils from "../config/utils.js";                    
+import AthleteServices from "../services/athleteServices.js";
 import ExercisePlanServices from "../services/exerciseplanServices.js";
 import CoachServices from "../services/coachServices.js";
 import ExerciseServices from "../services/exerciseServices.js";
 import ExercisePoolServices from "../services/exercisepoolServices.js";
+import PlanAssignmentServices from "../services/planAssignmentServices.js";
 
-// ---------- state ----------
 const search = ref("");
 const plans = ref([]);
 const coaches = ref([]);
@@ -15,15 +17,14 @@ const loading = ref(true);
 const exercises = ref([]);
 const poolEntries = ref([]);
 
-// view plan details
 const viewDialog = ref(false);
 const planToView = ref(null);
 
-// view plan exercises (read-only)
 const manageDialog = ref(false);
 const planForExercises = ref(null);
 
-// ---------- helpers ----------
+const athleteId = ref(null);
+const athleteName = ref("Athlete");
 
 const getCoachName = (coachID) => {
   const coach = coaches.value.find((c) => c.coachID === coachID);
@@ -41,26 +42,67 @@ const fetchCoaches = async () => {
   }
 };
 
+const loadAthlete = async () => {
+  const user = Utils.getStore("user");
+
+  if (!user) {
+    console.error("No logged-in user found in local storage.");
+    return;
+  }
+
+  const res = await AthleteServices.getAll();
+  const list = res.data ?? res;
+
+  const athlete = (list || []).find((a) => a.userID === user.userID);
+
+  if (athlete) {
+    athleteId.value = athlete.athleteID;
+    athleteName.value = athlete.user?.name || user.name || "Athlete";
+  } else {
+    console.warn("Could not find athlete record for userID:", user.userID);
+  }
+};
+
 const fetchPlans = async () => {
   loading.value = true;
   try {
-    const res = await ExercisePlanServices.getAll();
-    const data = res.data ?? res;
+    if (!athleteId.value) {
+      console.warn("fetchPlans called before athleteId is set.");
+      plans.value = [];
+      return;
+    }
 
-    plans.value = (data || []).map((p) => ({
-      id: p.planID,
-      name: p.name || "Untitled Plan",
-      description: p.description || "",
-      coachID: p.coachID,
-    }));
+    const [plansRes, assignmentsRes] = await Promise.all([
+      ExercisePlanServices.getAll(),
+      PlanAssignmentServices.getAll(),
+    ]);
 
-    console.log("Loaded ALL plans for athlete view:", plans.value);
+    const plansData = plansRes.data ?? plansRes;
+    const assignmentsData = assignmentsRes.data ?? assignmentsRes;
+
+    const myPlanIds = new Set(
+      (assignmentsData || [])
+        .filter((row) => row.athleteID === athleteId.value)
+        .map((row) => row.planID)
+    );
+
+    plans.value = (plansData || [])
+      .filter((p) => myPlanIds.has(p.planID || p.id))
+      .map((p) => ({
+        id: p.planID,
+        name: p.name || "Untitled Plan",
+        description: p.description || "",
+        coachID: p.coachID,
+      }));
+
+    console.log("Loaded assigned plans for athlete view:", plans.value);
   } catch (err) {
     console.error("Error fetching exercise plans:", err);
   } finally {
     loading.value = false;
   }
 };
+
 
 const fetchExercises = async () => {
   try {
@@ -84,7 +126,6 @@ const fetchPoolEntries = async () => {
   }
 };
 
-// which exercises belong to the currently selected plan
 const planExercises = computed(() => {
   if (!planForExercises.value) return [];
   return poolEntries.value
@@ -101,14 +142,11 @@ const planExercises = computed(() => {
     });
 });
 
-// filter plans by search
 const filteredPlans = computed(() =>
   plans.value.filter((p) =>
     p.name.toLowerCase().includes(search.value.toLowerCase())
   )
 );
-
-// ---------- UI handlers ----------
 
 const viewPlan = (plan) => {
   planToView.value = plan;
@@ -120,10 +158,17 @@ const openViewExercises = (plan) => {
   manageDialog.value = true;
 };
 
-// ---------- init ----------
 
 onMounted(async () => {
   await fetchCoaches();
+  await loadAthlete();  
+
+  if (!athleteId.value) {
+    console.error("Athlete ID missing in athlete exercise page.");
+    loading.value = false;
+    return;
+  }
+
   await Promise.all([fetchPlans(), fetchExercises(), fetchPoolEntries()]);
 });
 </script>
@@ -132,7 +177,6 @@ onMounted(async () => {
   <v-container class="plans-container" fluid>
     <v-row justify="center" class="mt-10">
       <v-col cols="12">
-        <!-- Top bar: search only, no add button -->
         <div class="d-flex align-center justify-space-between mb-4">
           <span></span>
           <v-text-field
@@ -146,7 +190,6 @@ onMounted(async () => {
           />
         </div>
 
-        <!-- Plans table -->
         <v-table class="plans-table" density="comfortable">
           <thead>
             <tr>
@@ -156,26 +199,22 @@ onMounted(async () => {
             </tr>
           </thead>
           <tbody>
-            <!-- Loading -->
             <tr v-if="loading">
               <td colspan="3" class="text-center py-6">
                 <v-progress-circular indeterminate color="black" />
               </td>
             </tr>
 
-            <!-- Empty -->
             <tr v-else-if="filteredPlans.length === 0">
               <td colspan="3" class="text-center py-4">
                 No exercise plans available yet.
               </td>
             </tr>
 
-            <!-- Data rows -->
             <tr v-else v-for="plan in filteredPlans" :key="plan.id">
               <td>{{ plan.name }}</td>
               <td>{{ getCoachName(plan.coachID) }}</td>
               <td class="text-right">
-                <!-- View plan details -->
                 <v-btn
                   icon="mdi-account-details-outline"
                   size="small"
@@ -183,7 +222,6 @@ onMounted(async () => {
                   variant="text"
                   @click="viewPlan(plan)"
                 />
-                <!-- View exercises in plan (read-only) -->
                 <v-btn
                   icon="mdi-clipboard-list-outline"
                   size="small"
@@ -196,7 +234,6 @@ onMounted(async () => {
           </tbody>
         </v-table>
 
-        <!-- View Plan Details Dialog -->
         <v-dialog v-model="viewDialog" max-width="500">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -226,7 +263,6 @@ onMounted(async () => {
           </v-card>
         </v-dialog>
 
-        <!-- View Plan Exercises (read-only) -->
         <v-dialog v-model="manageDialog" max-width="700">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">

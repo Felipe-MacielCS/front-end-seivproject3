@@ -46,7 +46,7 @@
           />
 
           <img
-            src=""
+            :src="logo"
             width="160"
             alt="mascot"
           />
@@ -125,6 +125,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from "vue";
 import Utils from "../config/utils.js";
+import logo from "../Assets/cado-barbell.png";
 
 import AthleteServices from "../services/athleteServices.js";
 import ExercisePlanServices from "../services/exerciseplanServices.js";
@@ -132,6 +133,7 @@ import GoalServices from "../services/goalServices.js";
 import ResultServices from "../services/resultServices.js";
 import ExercisePoolServices from "../services/exercisepoolServices.js";
 import ExerciseServices from "../services/exerciseServices.js"; 
+import PlanAssignmentServices from "../services/planAssignmentServices.js";
 
 const athleteId = ref(null);
 const athleteName = ref("Athlete");
@@ -204,18 +206,38 @@ const loadAthlete = async () => {
 
 const fetchAllPlans = async () => {
   loadingPlans.value = true;
+
   try {
-    const res = await ExercisePlanServices.getAll();
-    const data = res.data ?? res;
+    if (!athleteId.value) {
+      console.warn("fetchAllPlans called before athleteId is set.");
+      exercisePlans.value = [];
+      return;
+    }
 
-    exercisePlans.value = (data || []).map((p) => ({
-      id: p.planID || p.id,
-      name: p.name || "Untitled Plan",
-    }));
+    const [plansRes, assignmentsRes] = await Promise.all([
+      ExercisePlanServices.getAll(),
+      PlanAssignmentServices.getAll(),
+    ]);
 
-    console.log("Loaded ALL plans:", exercisePlans.value);
+    const plansData = plansRes.data ?? plansRes;
+    const assignmentsData = assignmentsRes.data ?? assignmentsRes;
+
+    const myPlanIds = new Set(
+      (assignmentsData || [])
+        .filter((row) => row.athleteID === athleteId.value)
+        .map((row) => row.planID)
+    );
+
+    exercisePlans.value = (plansData || [])
+      .filter((p) => myPlanIds.has(p.planID || p.id))
+      .map((p) => ({
+        id: p.planID || p.id,
+        name: p.name || "Untitled Plan",
+      }));
+
+    console.log("Loaded assigned plans for athlete:", exercisePlans.value);
   } catch (err) {
-    console.error("Error loading all exercise plans:", err);
+    console.error("Error loading assigned exercise plans:", err);
     exercisePlans.value = [];
   } finally {
     loadingPlans.value = false;
@@ -379,12 +401,13 @@ const handlePlay = () => {
 onMounted(async () => {
   try {
     await loadAthlete();
-    await fetchAllPlans();
 
     if (!athleteId.value) {
       console.error("Athlete ID still missing after loadAthlete.");
       return;
     }
+
+      await fetchAllPlans();
 
     await Promise.all([
       loadGoals(),
