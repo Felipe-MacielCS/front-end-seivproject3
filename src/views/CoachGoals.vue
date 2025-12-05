@@ -1,23 +1,22 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import GoalServices from "../services/goalServices.js";
 import ExerciseServices from "../services/exerciseServices.js";
 import AthleteServices from "../services/athleteServices.js";
 
 const route = useRoute();
-const athleteId = Number(route.params.athleteId);
+const router = useRouter();
 
+const athleteId = Number(route.params.athleteId);
 
 const search = ref("");
 const loading = ref(true);
 
-
 const athleteName = ref("Athlete");
-const goals = ref([]);          
-const allExercises = ref([]);   
-
+const goals = ref([]);
+const allExercises = ref([]);
 
 const deleteDialog = ref(false);
 const goalToDelete = ref(null);
@@ -245,6 +244,16 @@ const saveNewGoal = async () => {
     console.error("Error creating goal:", err);
   }
 };
+
+const goToProgress = (goal) => {
+  router.push({
+    name: "coachGoalProgress",
+    params: {
+      athleteId,
+      goalId: goal.id,
+    },
+  });
+};
 </script>
 
 <template>
@@ -305,6 +314,13 @@ const saveNewGoal = async () => {
                   @click="viewGoal(goal)"
                 />
                 <v-btn
+                  icon="mdi-chart-line"
+                  size="small"
+                  color="black"
+                  variant="text"
+                  @click="goToProgress(goal)"
+                />
+                <v-btn
                   icon="mdi-pencil"
                   size="small"
                   color="black"
@@ -323,15 +339,17 @@ const saveNewGoal = async () => {
           </tbody>
         </v-table>
 
-        
+        <!-- delete dialog -->
         <v-dialog v-model="deleteDialog" max-width="400">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
               Delete Goal
             </v-card-title>
             <v-card-text>
-              <p>Are you sure you want to remove this exercise from
-                {{ athleteName }}'s goals?</p>
+              <p>
+                Are you sure you want to remove this exercise from
+                {{ athleteName }}'s goals?
+              </p>
               <p><strong>Exercise:</strong> {{ goalToDelete?.exerciseName }}</p>
             </v-card-text>
 
@@ -350,7 +368,7 @@ const saveNewGoal = async () => {
           </v-card>
         </v-dialog>
 
-        
+        <!-- edit dialog -->
         <v-dialog v-model="editDialog" max-width="520">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
@@ -408,50 +426,53 @@ const saveNewGoal = async () => {
             </v-card-actions>
           </v-card>
         </v-dialog>
-        
+
+        <!-- view dialog -->
         <v-dialog v-model="viewDialog" max-width="500">
-        <v-card>
+          <v-card>
             <v-card-title class="text-h6 font-weight-bold">
-            Goal Details — {{ goalToView?.exerciseName }}
+              Goal Details — {{ goalToView?.exerciseName }}
             </v-card-title>
 
             <v-card-text>
-            <v-list density="compact">
+              <v-list density="compact">
                 <v-list-item>
-                <strong>Exercise:</strong> {{ goalToView?.exerciseName }}
+                  <strong>Exercise:</strong> {{ goalToView?.exerciseName }}
                 </v-list-item>
 
                 <v-list-item>
-                <strong>Goal Type:</strong> {{ goalToView?.type || "—" }}
+                  <strong>Goal Type:</strong> {{ goalToView?.type || "—" }}
                 </v-list-item>
 
                 <v-list-item>
-                <strong>Target:</strong> {{ goalToView?.target ?? "—" }}
+                  <strong>Target:</strong> {{ goalToView?.target ?? "—" }}
                 </v-list-item>
 
                 <v-list-item>
-                <strong>Metric:</strong> {{ goalToView?.metric || "—" }}
+                  <strong>Metric:</strong> {{ goalToView?.metric || "—" }}
                 </v-list-item>
 
                 <v-list-item>
-                <strong>Status:</strong> {{ goalToView?.status || "Not started" }}
+                  <strong>Status:</strong>
+                  {{ goalToView?.status || "Not started" }}
                 </v-list-item>
 
                 <v-list-item>
-                <strong>Deadline:</strong> {{ goalToView?.deadline || "—" }}
+                  <strong>Deadline:</strong>
+                  {{ goalToView?.deadline || "—" }}
                 </v-list-item>
-            </v-list>
+              </v-list>
             </v-card-text>
 
             <v-card-actions class="justify-end">
-            <v-btn color="grey" variant="outlined" @click="viewDialog = false">
+              <v-btn color="grey" variant="outlined" @click="viewDialog = false">
                 Close
-            </v-btn>
+              </v-btn>
             </v-card-actions>
-        </v-card>
+          </v-card>
         </v-dialog>
 
-        
+        <!-- add dialog -->
         <v-dialog v-model="addDialog" max-width="520">
           <v-card>
             <v-card-title class="text-h6 font-weight-bold">
