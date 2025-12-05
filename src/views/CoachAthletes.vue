@@ -177,14 +177,14 @@ const saveAssignments = async () => {
         <!-- TOP CONTROLS -->
         <div class="d-flex align-center justify-space-between mb-4">
           <div class="d-flex align-center gap-4" style="width: 70%;">
-            <v-select
+            <!-- <v-select
               v-model="selectedSport"
               :items="sports"
               label="Sports"
               density="compact"
               variant="outlined"
               class="w-25 small-input"
-            />
+            /> -->
 
             <v-text-field
               v-model="search"
