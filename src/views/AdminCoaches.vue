@@ -98,14 +98,14 @@ const saveEdit = async () => {
     <v-row justify="center" class="mt-10">
       <v-col cols="12">
         <div class="d-flex align-center justify-space-between mb-4">
-          <v-select
+          <!-- <v-select
             v-model="selectedSport"
             :items="sports"
             label="Sports"
             density="compact"
             variant="outlined"
             class="w-25 small-input"
-          ></v-select>
+          ></v-select> -->
 
           <v-text-field
             v-model="search"
