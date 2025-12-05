@@ -75,6 +75,14 @@ const goTo = (path) => {
   padding-bottom: 50px;
 }
 
+.dash-image {
+  width: 100%;
+  max-width: 180px;     /* prevents huge images */
+  max-height: 150px;    /* keeps tall images contained */
+  object-fit: contain;  /* keeps full image visible */
+  margin-top: 20px;
+}
+
 /* Card styling — Bigger and more balanced */
 .dashboard-card {
   width: 300px;              /* wider */
