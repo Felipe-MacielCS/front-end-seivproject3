@@ -1,10 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 
-// Auth
 import Login from "./views/Login.vue";
 import Signup from "./views/Signup.vue";
 
-// Dashboards
 import AthleteDashboard from "./views/AthleteDashBoard.vue";
 import CoachDashboard from "./views/CoachDashBoard.vue";
 import AdminDashboard from "./views/AdminDashBoard.vue";
@@ -20,7 +18,6 @@ import AthleteGoals from "./views/AthleteGoals.vue";
 import AthleteResults from "./views/AthleteResults.vue";
 import AthleteProfile from "./views/AthleteProfile.vue";
 import CoachGoals from "./views/CoachGoals.vue";
-
 import AthleteGoalProgress from "./views/AthleteGoalProgress.vue";
 
 const router = createRouter({
@@ -105,6 +102,12 @@ const router = createRouter({
       component: CoachGoals,
       meta: { role: "coach" },
     },
+    {
+      path: "/coach/goals/:athleteId/goal/:goalId/progress",
+      name: "coachGoalProgress",
+      component: AthleteGoalProgress,
+      meta: { role: "coach" },
+    },
 
     // Athlete
     {
@@ -138,7 +141,7 @@ const router = createRouter({
       meta: { role: "athlete" },
     },
 
-    // 404
+    // 404 catch-all
     {
       path: "/:pathMatch(.*)*",
       redirect: "/login",
