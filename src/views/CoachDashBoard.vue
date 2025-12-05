@@ -1,6 +1,8 @@
 <script setup>
 import { useRouter } from "vue-router";
-
+import barbell from "../Assets/cado-barbell.png";
+import dumbbells from "../Assets/cado-dumbbells.png";
+import clipboard from "../Assets/cado-clipboard.png";
 
 
 const router = useRouter();
@@ -9,17 +11,17 @@ const router = useRouter();
 const cards = [
   {
     title: "Manage Athletes",
-    image: "src/Assets/cado-barbell.png",
+    image: barbell,
     route: "/coach/athletes",
   },
   {
     title: "Manage Exercises",
-    image: "src/Assets/cado-dumbbells.png",
+    image: dumbbells,
     route: "/coach/exercises",
   },
   {
     title: "Manage Exercise Plans",
-    image: "src/Assets/cado-clipboard.png",
+    image: clipboard,
     route: "/coach/exerciseplans",
   },
 ];
