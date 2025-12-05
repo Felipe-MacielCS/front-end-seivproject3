@@ -66,7 +66,7 @@ const navItems = [
       <!-- Right: User Dropdown -->
       <v-menu offset-y rounded>
         <template #activator="{ props }">
-          <v-btn icon v-bind="props" @click="router.push('/athlete/profile')">
+          <v-btn icon v-bind="props">
             <v-avatar size="40">
               <v-img
                 v-if="user?.picture"
@@ -77,6 +77,7 @@ const navItems = [
             </v-avatar>
           </v-btn>
         </template>
+
 
         <v-card min-width="240" class="pa-4">
           <div class="text-center mb-3">
@@ -94,6 +95,15 @@ const navItems = [
           </div>
 
           <v-divider class="my-2" />
+          <v-btn
+            block
+            variant="outlined"
+            class="mb-2"
+            @click="router.push('/athlete/profile')"
+          >
+            <v-icon start>mdi-account-circle-outline</v-icon>
+            View Profile
+          </v-btn>
 
           <v-btn
             block
