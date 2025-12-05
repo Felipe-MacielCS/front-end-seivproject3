@@ -9,17 +9,17 @@ const router = useRouter();
 const cards = [
   {
     title: "Manage Athletes",
-    image: "@/Assets/cado-barbell.png",
+    image: "src/Assets/cado-barbell.png",
     route: "/coach/athletes",
   },
   {
     title: "Manage Exercises",
-    icon: "mdi-dumbbell",
+    image: "src/Assets/cado-dumbbells.png",
     route: "/coach/exercises",
   },
   {
     title: "Manage Exercise Plans",
-    image: "@/Assets/cado-clipboard.png",
+    image: "src/Assets/cado-clipboard.png",
     route: "/coach/exerciseplans",
   },
 ];
@@ -73,6 +73,14 @@ const goTo = (path) => {
 .dashboard-container {
   padding-top: 120px;
   padding-bottom: 50px;
+}
+
+.dash-image {
+  width: 100%;
+  max-width: 180px;     /* prevents huge images */
+  max-height: 150px;    /* keeps tall images contained */
+  object-fit: contain;  /* keeps full image visible */
+  margin-top: 20px;
 }
 
 /* Card styling — Bigger and more balanced */
